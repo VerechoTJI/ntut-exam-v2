@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 export enum MessageType {
   NOTIFICATION = "notification",
   CONFIG_UPDATE = "config_update",
+  EXAM = "EXAM",
 }
 
 /**

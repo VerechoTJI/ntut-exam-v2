@@ -4,6 +4,7 @@ import { DeviceService } from "../../services/device.service";
 import { AuthService } from "../../services/auth.service";
 import { ExamService } from "../../services/exam.service";
 import * as MessageService from "../../services/message.service";
+import { User } from "../../models/user.model";
 import { HttpError } from "../../utils/http-error";
 
 export class UserController {
@@ -15,6 +16,28 @@ export class UserController {
     try {
       const publicKey = CryptoService.getRsaPublicKey();
       res.status(200).json({ publicKey });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /user/auth/student-id
+   * Helper endpoint for desktop client to automatically retrieve its student ID by IP address.
+   */
+  static async getStudentIdByIp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress || "";
+      if (!ipAddress) {
+        throw new HttpError(400, "Bad Request: Could not determine client IP address");
+      }
+
+      const user = await User.findOne({ where: { ipAddress } });
+      if (!user) {
+        throw new HttpError(404, `Not Found: No student assigned to IP address ${ipAddress}`);
+      }
+
+      res.status(200).json({ testId: user.testId });
     } catch (error) {
       next(error);
     }

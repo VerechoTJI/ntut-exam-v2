@@ -130,6 +130,19 @@ export class MessageSocketService {
       },
     });
   }
+
+  public static sendStatusUpdateNotification(messageId: number, state: string): void {
+    const instance = MessageSocketService.getInstance();
+    instance.emitEvent("exam-message", {
+      success: true,
+      data: {
+        id: messageId,
+        type: "EXAM",
+        message: state,
+        namespace: "STATUS"
+      },
+    });
+  }
 }
 
 export default MessageSocketService;

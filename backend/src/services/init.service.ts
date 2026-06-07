@@ -8,6 +8,7 @@ import { ViolationLog } from "../models/violation-log.model";
 import { UserActionLog } from "../models/user-action-log.model";
 import { Message } from "../models/message.model";
 import { SystemSettingsService } from "./system-settings.service";
+import { ExamStateService, ExamState } from "./exam-state.service";
 import { HttpError } from "../utils/http-error";
 import { getDefaultScoreboard } from "../utils/init-db.util";
 
@@ -80,6 +81,9 @@ export class InitService {
       }
 
       await transaction.commit();
+      
+      // Update exam state
+      await ExamStateService.changeState(ExamState.NOT_STARTED);
     } catch (error: any) {
       await transaction.rollback();
       throw error;
@@ -106,6 +110,9 @@ export class InitService {
       await DeviceKeyMap.destroy({ where: {}, transaction });
 
       await transaction.commit();
+      
+      // Update exam state
+      await ExamStateService.changeState(ExamState.UNINITIALIZED);
     } catch (error: any) {
       await transaction.rollback();
       throw error;
