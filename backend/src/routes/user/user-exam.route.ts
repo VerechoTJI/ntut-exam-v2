@@ -4,6 +4,9 @@ import { decryptAndVerifyDeviceSession } from "../../middlewares/user-crypto.mid
 
 const userExamRouter = Router();
 
+// Get current exam state
+userExamRouter.get("/status", UserController.getExamStatus);
+
 // Secure exam config retrieval, protected by GCM encryption and session tokens
 userExamRouter.post("/config", decryptAndVerifyDeviceSession, UserController.getConfig);
 
