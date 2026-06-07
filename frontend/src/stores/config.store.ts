@@ -1,0 +1,90 @@
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import axios from 'axios';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+export const useConfigStore = defineStore('config', () => {
+  const config = ref<any>(null);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const isInitialized = ref(false);
+
+  async function fetchConfig() {
+    loading.value = true;
+    error.value = null;
+    try {
+      const res = await axios.get(`${BACKEND_URL}/admin/config`);
+      config.value = res.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message || 'Failed to load config';
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function saveConfig(newConfig: any) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const res = await axios.post(`${BACKEND_URL}/admin/config`, newConfig);
+      config.value = res.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message || 'Failed to save config';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function fetchInitStatus() {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/admin/init/init-status`);
+      isInitialized.value = res.data.isInitialized;
+    } catch (err: any) {
+      console.error('Failed to fetch init status', err);
+    }
+  }
+
+  async function initializeDatabase() {
+    loading.value = true;
+    error.value = null;
+    try {
+      await axios.post(`${BACKEND_URL}/admin/init`);
+      isInitialized.value = true;
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message || 'Failed to initialize database';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function resetDatabase() {
+    loading.value = true;
+    error.value = null;
+    try {
+      await axios.post(`${BACKEND_URL}/admin/init/reset`, {
+        confirm: "RESET"
+      });
+      isInitialized.value = true; // Still initialized after reset, just cleared data
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message || 'Failed to reset database';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return {
+    config,
+    loading,
+    error,
+    isInitialized,
+    fetchConfig,
+    saveConfig,
+    fetchInitStatus,
+    initializeDatabase,
+    resetDatabase
+  };
+});
