@@ -4,6 +4,7 @@ import { DeviceService } from "../../services/device.service";
 import { AuthService } from "../../services/auth.service";
 import { ExamService } from "../../services/exam.service";
 import * as MessageService from "../../services/message.service";
+import { ExamStateService } from "../../services/exam-state.service";
 import { User } from "../../models/user.model";
 import { HttpError } from "../../utils/http-error";
 
@@ -118,6 +119,19 @@ export class UserController {
         ...encryptedResult,
         device_uuid: deviceUuid
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /user/exam/status
+   * Retrieve the current exam state.
+   */
+  static async getExamStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const status = await ExamStateService.getCurrentState();
+      res.status(200).json({ status });
     } catch (error) {
       next(error);
     }

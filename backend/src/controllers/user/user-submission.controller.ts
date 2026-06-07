@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { CodeStorageService } from '../../services/code-storage.service';
 import { ExamConfigParserService } from '../../services/exam-config-parser.service';
+import { ScoreBoard } from '../../models/score-board.model';
 import logger from '../../utils/logger.util';
 
 export class UserSubmissionController {
@@ -33,6 +34,39 @@ export class UserSubmissionController {
       res.status(200).json({ success: true, message: 'Submission saved successfully' });
     } catch (error: any) {
       logger.error(`User submitCode error: ${error.message}`);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  public static async submitScore(req: Request, res: Response): Promise<void> {
+    try {
+      const testId = (req as any).userSession?.testId || (req as any).user?.testId;
+      const body = (req as any).userSession?.decryptedBody || req.body;
+      
+      const { score } = body || {};
+
+      if (!testId) {
+        res.status(401).json({ error: 'Unauthorized: Missing testId' });
+        return;
+      }
+
+      if (score === undefined) {
+        res.status(400).json({ error: 'Bad Request: Missing score' });
+        return;
+      }
+
+      const scoreBoard = await ScoreBoard.findOne({ where: { testId } });
+      if (scoreBoard) {
+        scoreBoard.score = score;
+        scoreBoard.lastSubmitTime = new Date();
+        await scoreBoard.save();
+      } else {
+        await ScoreBoard.create({ testId, score, lastSubmitTime: new Date() });
+      }
+
+      res.status(200).json({ success: true, message: 'Score saved successfully' });
+    } catch (error: any) {
+      logger.error(`User submitScore error: ${error.message}`);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
