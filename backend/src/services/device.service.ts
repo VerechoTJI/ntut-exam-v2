@@ -7,11 +7,6 @@ export class DeviceService {
    * Register a hardware device and its client AES Key (decrypted from RSA wrapper).
    */
   static async registerKey(deviceUuid: string, encryptedAesKey: string, ipAddress: string = ""): Promise<void> {
-    const existing = await DeviceKeyMap.findOne({ where: { deviceUuid } });
-    if (existing) {
-      throw new HttpError(403, "Device already registered");
-    }
-
     let clientAesKeyBuffer: Buffer;
     try {
       clientAesKeyBuffer = CryptoService.decryptRSA(encryptedAesKey);
@@ -22,12 +17,20 @@ export class DeviceService {
       throw new HttpError(400, `Failed to decrypt AES key: ${error.message}`);
     }
 
-    await DeviceKeyMap.create({
-      deviceUuid,
-      ipAddress,
-      clientAesKey: clientAesKeyBuffer.toString("hex"),
-      isOnline: true
-    });
+    const existing = await DeviceKeyMap.findOne({ where: { deviceUuid } });
+    if (existing) {
+      existing.clientAesKey = clientAesKeyBuffer.toString("hex");
+      existing.ipAddress = ipAddress;
+      existing.isOnline = true;
+      await existing.save();
+    } else {
+      await DeviceKeyMap.create({
+        deviceUuid,
+        ipAddress,
+        clientAesKey: clientAesKeyBuffer.toString("hex"),
+        isOnline: true
+      });
+    }
   }
 
   /**
