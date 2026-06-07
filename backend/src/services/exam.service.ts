@@ -2,12 +2,13 @@ import { SystemSettingsService } from "./system-settings.service";
 import { DeviceService } from "./device.service";
 import { CryptoService } from "./crypto.service";
 import { ReplayProtectionService } from "./replay-protection.service";
+import { ExamConfigParserService } from "./exam-config-parser.service";
 import { HttpError } from "../utils/http-error";
 import { AesEncryptedPayload } from "../types/crypto.type";
 import logger from "../utils/logger.util";
 
 export class ExamService {
-  static async getSecureTestCase(payload: AesEncryptedPayload, decryptedBody?: any): Promise<AesEncryptedPayload> {
+  static async getSecureConfig(payload: AesEncryptedPayload, decryptedBody?: any): Promise<AesEncryptedPayload> {
     const { device_uuid: deviceUuid } = payload;
     const aesKey = await DeviceService.getAesKey(deviceUuid);
 
@@ -27,9 +28,9 @@ export class ExamService {
       ReplayProtectionService.verifyAndSaveNonce(nonce, timestamp);
     }
 
-    const { session_token: sessionToken, question_id: questionId } = decrypted;
-    if (!sessionToken || !questionId) {
-      throw new HttpError(400, "Missing required fields in decrypted payload");
+    const { session_token: sessionToken } = decrypted;
+    if (!sessionToken) {
+      throw new HttpError(400, "Missing required session_token in decrypted payload");
     }
 
     let tokenPayload: any;
@@ -43,39 +44,17 @@ export class ExamService {
       throw new HttpError(401, "Security violation: Token device UUID mismatch");
     }
 
-    let testcaseContent = "";
+    let configContent = "{}";
     try {
-      const config = await SystemSettingsService.getSetting<any>("exam_config");
-      if (config?.sections) {
-        let foundPuzzle: any = null;
-        for (const section of config.sections) {
-          foundPuzzle = section.puzzles?.find((p: any) => p.id === questionId);
-          if (foundPuzzle) break;
-        }
-
-        if (foundPuzzle) {
-          testcaseContent = JSON.stringify(foundPuzzle.subtasks);
-        }
+      const config = await ExamConfigParserService.getConfig();
+      if (config) {
+        configContent = JSON.stringify(config);
       }
     } catch (err: any) {
-      logger.warn(`Failed to retrieve testcase from exam_config: ${err.message}`);
+      logger.warn(`Failed to retrieve exam_config: ${err.message}`);
     }
 
-    if (!testcaseContent) {
-      testcaseContent = JSON.stringify({
-        questionId,
-        subtasks: [
-          {
-            title: "Default Subtask",
-            score: 100,
-            visible: [{ input: "hello", output: "hello" }],
-            hidden: [{ input: "secret", output: "secret" }]
-          }
-        ]
-      });
-    }
-
-    const encryptedResult = CryptoService.encryptAESGCM(testcaseContent, aesKey);
+    const encryptedResult = CryptoService.encryptAESGCM(configContent, aesKey);
     return {
       ...encryptedResult,
       device_uuid: deviceUuid

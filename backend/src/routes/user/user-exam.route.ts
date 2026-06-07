@@ -4,7 +4,7 @@ import { decryptAndVerifyDeviceSession } from "../../middlewares/user-crypto.mid
 
 const userExamRouter = Router();
 
-// Secure exam testcase retrieval, protected by GCM encryption and session tokens
-userExamRouter.post("/testcase", decryptAndVerifyDeviceSession, UserController.getTestCase);
+// Secure exam config retrieval, protected by GCM encryption and session tokens
+userExamRouter.post("/config", decryptAndVerifyDeviceSession, UserController.getConfig);
 
 export default userExamRouter;
