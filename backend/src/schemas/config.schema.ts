@@ -57,7 +57,7 @@ const sectionSchema = z.object({
 const accessUserSchema = z.object({
     id: z.string(),
     name: z.string(),
-    ip: z.string().ip().optional(),
+    ip: z.union([z.string().ip(), z.literal("")]).optional(),
 });
 
 export const examConfigSchema = z.object({
