@@ -7,4 +7,7 @@ const userExamRouter = Router();
 // Secure exam config retrieval, protected by GCM encryption and session tokens
 userExamRouter.post("/config", decryptAndVerifyDeviceSession, UserController.getConfig);
 
+// Secure missed messages retrieval, protected by GCM encryption and session tokens
+userExamRouter.post("/messages", decryptAndVerifyDeviceSession, UserController.getMissedMessages);
+
 export default userExamRouter;

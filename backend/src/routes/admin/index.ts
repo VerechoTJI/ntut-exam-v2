@@ -7,6 +7,7 @@ import adminLogRouter from "./admin-log.route";
 import adminAnticheatRouter from "./admin-anticheat.route";
 import adminSubmissionRouter from "./admin-submission.route";
 import adminJudgerRouter from "./admin-judger.route";
+import adminMessageRouter from "./admin-message.route";
 
 const adminRouter = Router();
 
@@ -23,5 +24,6 @@ adminRouter.use("/log", adminLogRouter);
 adminRouter.use("/anticheat", adminAnticheatRouter);
 adminRouter.use("/submissions", adminSubmissionRouter);
 adminRouter.use("/judger", adminJudgerRouter);
+adminRouter.use("/messages", adminMessageRouter);
 
 export default adminRouter;

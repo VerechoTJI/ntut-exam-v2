@@ -3,6 +3,7 @@ import { CryptoService } from "../../services/crypto.service";
 import { DeviceService } from "../../services/device.service";
 import { AuthService } from "../../services/auth.service";
 import { ExamService } from "../../services/exam.service";
+import * as MessageService from "../../services/message.service";
 import { HttpError } from "../../utils/http-error";
 
 export class UserController {
@@ -67,6 +68,33 @@ export class UserController {
       const decryptedBody = req.userSession?.decryptedBody;
       const encryptedConfig = await ExamService.getSecureConfig(payload, decryptedBody);
       res.status(200).json(encryptedConfig);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /user/exam/messages
+   * Securely retrieve missed messages after a given message ID.
+   */
+  static async getMissedMessages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const decryptedBody = req.userSession?.decryptedBody;
+      const deviceUuid = req.userSession?.deviceUuid;
+      if (!decryptedBody || !deviceUuid) {
+         return next(new HttpError(401, "Unauthorized: Missing session details"));
+      }
+
+      const lastMessageId = decryptedBody.lastMessageId || 0;
+      const messages = await MessageService.getMessagesAfterId(Number(lastMessageId));
+
+      const aesKey = await DeviceService.getAesKey(deviceUuid);
+      const encryptedResult = CryptoService.encryptAESGCM(JSON.stringify(messages), aesKey);
+
+      res.status(200).json({
+        ...encryptedResult,
+        device_uuid: deviceUuid
+      });
     } catch (error) {
       next(error);
     }
