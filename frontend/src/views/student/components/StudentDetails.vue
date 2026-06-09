@@ -1,19 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useStudentStore } from '../../../stores/student.store';
+import { useScoreStore } from '../../../stores/score.store';
+import { useConfigStore } from '../../../stores/config.store';
 import CodeViewer from './CodeViewer.vue';
+import SubmissionDetails from '../../../components/SubmissionDetails.vue';
 
 const props = defineProps<{
   student: any;
 }>();
 
 const studentStore = useStudentStore();
+const scoreStore = useScoreStore();
+const configStore = useConfigStore();
+
 const loadingCode = ref(false);
 const evaluating = ref(false);
 const resetLoading = ref(false);
 const submissions = ref<any[]>([]);
 const evalResult = ref<any>(null);
 const evalError = ref<string | null>(null);
+
+const tab = ref('code');
+const isLocked = ref(true);
 
 const emit = defineEmits<{
   (e: 'refresh-list'): void;
@@ -26,13 +35,21 @@ const fetchCode = async () => {
   evalResult.value = null;
   evalError.value = null;
   try {
-    submissions.value = await studentStore.fetchStudentCode(props.student.id);
+    const codeReq = studentStore.fetchStudentCode(props.student.id).then(res => submissions.value = res);
+    const scoreReq = scoreStore.fetchScores();
+    const configReq = configStore.fetchConfig();
+    await Promise.all([codeReq, scoreReq, configReq]);
   } catch (err) {
     console.error(err);
   } finally {
     loadingCode.value = false;
   }
 };
+
+const studentScoreRecord = computed(() => {
+  if (!props.student || !scoreStore.scores) return null;
+  return scoreStore.scores.find(s => s.user?.testId === props.student.id || s.user?.id === props.student.id);
+});
 
 // Expose fetchCode so parent can trigger it, or just watch inside component
 import { watch } from 'vue';
@@ -69,6 +86,18 @@ const handleReevaluate = async () => {
     evalError.value = err.message || '評測失敗';
   } finally {
     evaluating.value = false;
+  }
+};
+
+const exporting = ref(false);
+const handleExportCode = async () => {
+  exporting.value = true;
+  try {
+    await studentStore.exportStudentCodeZip(props.student.id);
+  } catch (err: any) {
+    alert('匯出失敗');
+  } finally {
+    exporting.value = false;
   }
 };
 </script>
@@ -110,7 +139,7 @@ const handleReevaluate = async () => {
                   <v-icon color="info" size="small" class="mr-2">mdi-ip-network</v-icon>
                 </template>
                 <v-list-item-title class="text-body-2">IP 位址</v-list-item-title>
-                <v-list-item-subtitle class="text-body-1 font-weight-medium">
+                <v-list-item-subtitle class="text-body-1 font-weight-medium text-wrap" style="word-break: break-all;">
                   {{ student.ipAddress || '尚未紀錄' }}
                 </v-list-item-subtitle>
               </v-list-item>
@@ -121,7 +150,7 @@ const handleReevaluate = async () => {
                   <v-icon color="deep-purple" size="small" class="mr-2">mdi-laptop</v-icon>
                 </template>
                 <v-list-item-title class="text-body-2">裝置 UUID</v-list-item-title>
-                <v-list-item-subtitle class="text-body-1 font-weight-medium">
+                <v-list-item-subtitle class="text-body-1 font-weight-medium text-wrap" style="word-break: break-all;">
                   {{ student.deviceUuid || '尚未綁定' }}
                 </v-list-item-subtitle>
               </v-list-item>
@@ -150,6 +179,16 @@ const handleReevaluate = async () => {
           >
             重新評測程式碼
           </v-btn>
+          <v-btn
+            color="success"
+            prepend-icon="mdi-download"
+            :loading="exporting"
+            @click="handleExportCode"
+            variant="flat"
+            width="160"
+          >
+            匯出學生程式碼 (ZIP)
+          </v-btn>
         </div>
       </v-card-text>
     </v-card>
@@ -177,8 +216,51 @@ const handleReevaluate = async () => {
       評測失敗: {{ evalError }}
     </v-alert>
 
-    <!-- Code Viewer -->
-    <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" />
+    <!-- Desktop View: Side by side -->
+    <v-row class="d-none d-lg-flex flex-grow-1 min-h-0 mx-0 mt-0">
+      <v-col cols="6" class="h-100 d-flex flex-column pa-2 pl-0">
+        <v-card class="h-100 d-flex flex-column" border elevation="0">
+          <v-card-title class="bg-grey-lighten-4 border-b py-2 text-subtitle-1 font-weight-bold">
+            <v-icon start>mdi-code-braces</v-icon> 提交程式碼
+          </v-card-title>
+          <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" />
+        </v-card>
+      </v-col>
+      <v-col cols="6" class="h-100 d-flex flex-column pa-2 pr-0">
+        <v-card class="h-100 d-flex flex-column" border elevation="0">
+          <v-card-title class="bg-grey-lighten-4 border-b py-2 text-subtitle-1 font-weight-bold">
+            <v-icon start>mdi-format-list-checks</v-icon> 評測結果
+          </v-card-title>
+          <v-card-text class="pa-4 flex-grow-1 min-h-0 h-100">
+            <SubmissionDetails :scoreRecord="studentScoreRecord" :examConfig="configStore.config" v-model:isLocked="isLocked" />
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Mobile View: Tabs -->
+    <div class="d-lg-none flex-grow-1 d-flex flex-column min-h-0 mt-4">
+      <v-tabs v-model="tab" color="primary" class="mb-4 flex-shrink-0">
+        <v-tab value="code">
+          <v-icon start>mdi-code-braces</v-icon>
+          提交程式碼
+        </v-tab>
+        <v-tab value="result">
+          <v-icon start>mdi-format-list-checks</v-icon>
+          評測結果
+        </v-tab>
+      </v-tabs>
+
+      <v-window v-model="tab" class="flex-grow-1 min-h-0 h-100" style="overflow-y: hidden;">
+        <v-window-item value="code" class="h-100 d-flex flex-column">
+          <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" />
+        </v-window-item>
+        
+        <v-window-item value="result" class="h-100 d-flex flex-column">
+          <SubmissionDetails :scoreRecord="studentScoreRecord" :examConfig="configStore.config" v-model:isLocked="isLocked" />
+        </v-window-item>
+      </v-window>
+    </div>
   </div>
 </template>
 

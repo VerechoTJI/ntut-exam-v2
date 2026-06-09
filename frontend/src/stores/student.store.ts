@@ -64,6 +64,29 @@ export const useStudentStore = defineStore('student', () => {
     }
   }
 
+  async function exportStudentCodeZip(testId: string) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const res = await axios.get(`${BACKEND_URL}/admin/submissions/${testId}/export`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${testId}_codes.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      error.value = 'Failed to export student code zip';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     students,
     loading,
@@ -71,6 +94,7 @@ export const useStudentStore = defineStore('student', () => {
     fetchStudents,
     resetDeviceBinding,
     fetchStudentCode,
-    reevaluateStudentCode
+    reevaluateStudentCode,
+    exportStudentCodeZip
   };
 });

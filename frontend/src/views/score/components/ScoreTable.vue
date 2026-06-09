@@ -189,9 +189,9 @@ const copyToClipboard = async () => {
         <thead>
           <!-- Row 1: Section headers -->
           <tr>
-            <th rowspan="3" class="text-left font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-1 head-cell">學號 (User ID)</th>
-            <th rowspan="3" class="text-left font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-2 head-cell">姓名 (Name)</th>
-            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-3 head-cell">總分 (Total)</th>
+            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-1 head-cell">學號</th>
+            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-2 head-cell">姓名</th>
+            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-3 head-cell">總分</th>
             <th
               v-for="section in props.config?.sections"
               :key="section.id"
@@ -269,9 +269,9 @@ const copyToClipboard = async () => {
             @click="emit('click-row', item)"
             class="cursor-pointer score-row"
           >
-            <td class="sticky-col col-1 text-body-2 font-weight-medium cell-border px-4 py-2">{{ item['user.testId'] }}</td>
-            <td class="sticky-col col-2 text-body-2 cell-border px-4 py-2">{{ item['user.name'] }}</td>
-            <td class="sticky-col col-3 text-center text-body-2 font-weight-bold color-score cell-border px-4 py-2">{{ item.score }}</td>
+            <td class="sticky-col col-1 text-body-2 font-weight-medium cell-border px-2 py-2 text-ellipsis text-center" :title="item['user.testId']">{{ item['user.testId'] }}</td>
+            <td class="sticky-col col-2 text-body-2 cell-border px-2 py-2 text-ellipsis text-center" :title="item['user.name']">{{ item['user.name'] }}</td>
+            <td class="sticky-col col-3 text-center text-body-2 font-weight-bold color-score cell-border px-2 py-2 text-ellipsis" :title="item.score">{{ item.score }}</td>
             
             <template v-for="section in props.config?.sections" :key="section.id">
               <template v-if="section.puzzles && section.puzzles.length > 0">
@@ -339,31 +339,58 @@ const copyToClipboard = async () => {
 .color-score {
   color: #1976d2;
 }
+.gap-4 {
+  gap: 16px;
+}
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Frozen columns styling */
-.sticky-col {
-  position: sticky;
-  z-index: 2;
-  background-color: white;
+@media (min-width: 769px) {
+  .sticky-col {
+    position: sticky;
+    z-index: 2;
+    background-color: white;
+  }
+  thead tr th.sticky-col {
+    z-index: 4;
+  }
+  .col-1 {
+    left: 0;
+    box-shadow: 1px 0 0 #e0e0e0;
+    width: 110px;
+    min-width: 110px;
+    max-width: 110px;
+  }
+  .col-2 {
+    left: 110px;
+    box-shadow: 1px 0 0 #e0e0e0;
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+  }
+  .col-3 {
+    left: 210px;
+    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+  }
 }
-thead tr th.sticky-col {
-  z-index: 4;
+
+@media (max-width: 768px) {
+  .sticky-col {
+    position: static !important;
+    width: auto !important;
+    min-width: auto !important;
+    max-width: auto !important;
+    box-shadow: none !important;
+  }
 }
-.col-1 {
-  left: 0;
-  box-shadow: 1px 0 0 #e0e0e0;
-  min-width: 120px;
-}
-.col-2 {
-  left: 120px;
-  box-shadow: 1px 0 0 #e0e0e0;
-  min-width: 120px;
-}
-.col-3 {
-  left: 240px;
-  box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
-  min-width: 80px;
-}
+
 .head-cell {
   background-color: #f5f5f5 !important;
 }
