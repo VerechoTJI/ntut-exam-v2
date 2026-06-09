@@ -4,6 +4,10 @@ import { DeviceService } from "./device.service";
 import { CryptoService } from "./crypto.service";
 import { HttpError } from "../utils/http-error";
 import { AesEncryptedPayload, LoginDecryptedPayload } from "../types/crypto.type";
+import { UnblockedDevice } from "../models/unblocked-device.model";
+import { LoginRequest } from "../models/login-request.model";
+import { SystemSettingsService } from "./system-settings.service";
+import { Op } from "sequelize";
 
 export class AuthService {
   static async loginAndBind(payload: AesEncryptedPayload, clientIp: string): Promise<string> {
@@ -30,26 +34,39 @@ export class AuthService {
 
     const cleanClientIp = clientIp.replace(/^::ffff:/, "");
 
-    if (user.deviceUuid) {
-      if (user.deviceUuid !== deviceUuid) {
-        throw new HttpError(403, "This account is already logged in on another device, please contact the TA");
+    const unblockedIpRecord = await UnblockedDevice.findOne({
+      where: {
+        targetType: "IP",
+        targetValue: cleanClientIp
       }
+    });
+
+    if (unblockedIpRecord) {
+      await unblockedIpRecord.destroy();
+      user.deviceUuid = deviceUuid;
+      user.ipAddress = cleanClientIp;
     } else {
-      if (!user.ipAddress) {
-        user.deviceUuid = deviceUuid;
-        user.ipAddress = cleanClientIp;
-      } else {
-        const deviceRecord = await DeviceKeyMap.findOne({ where: { deviceUuid } });
-        const deviceIp = deviceRecord?.ipAddress || "";
-
-        const clientIpClean = cleanClientIp;
-        const presetIpClean = user.ipAddress.replace(/^::ffff:/, "");
-        const deviceIpClean = deviceIp.replace(/^::ffff:/, "");
-
-        if (clientIpClean !== presetIpClean && deviceIpClean !== presetIpClean) {
-          throw new HttpError(403, "Your device ip is not match with the preset ip, please contact the TA");
+      if (user.deviceUuid) {
+        if (user.deviceUuid !== deviceUuid) {
+          throw new HttpError(403, "This account is already logged in on another device, please contact the TA");
         }
-        user.deviceUuid = deviceUuid;
+      } else {
+        if (!user.ipAddress) {
+          user.deviceUuid = deviceUuid;
+          user.ipAddress = cleanClientIp;
+        } else {
+          const deviceRecord = await DeviceKeyMap.findOne({ where: { deviceUuid } });
+          const deviceIp = deviceRecord?.ipAddress || "";
+
+          const clientIpClean = cleanClientIp;
+          const presetIpClean = user.ipAddress.replace(/^::ffff:/, "");
+          const deviceIpClean = deviceIp.replace(/^::ffff:/, "");
+
+          if (clientIpClean !== presetIpClean && deviceIpClean !== presetIpClean) {
+            throw new HttpError(403, "Your device ip is not match with the preset ip, please contact the TA");
+          }
+          user.deviceUuid = deviceUuid;
+        }
       }
     }
 
@@ -65,7 +82,19 @@ export class AuthService {
     if (!user) {
       throw new HttpError(404, `Not Found: User with test ID "${testId}" not found`);
     }
-    user.deviceUuid = null as any;
-    await user.save();
+    const oldDeviceUuid = user.deviceUuid;
+    
+    await user.update({
+      deviceUuid: null,
+      ipAddress: null
+    });
+
+    if (oldDeviceUuid) {
+      try {
+        await DeviceService.deleteKey(oldDeviceUuid);
+      } catch (err) {
+        // Ignore if already deleted
+      }
+    }
   }
 }

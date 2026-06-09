@@ -1,4 +1,5 @@
-import { Table, Column, Model, DataType } from "sequelize-typescript";
+import { Table, Column, Model, DataType, HasOne } from "sequelize-typescript";
+import { User } from "./user.model";
 
 @Table({ tableName: "device_key_maps", timestamps: false })
 export class DeviceKeyMap extends Model {
@@ -19,4 +20,7 @@ export class DeviceKeyMap extends Model {
 
   @Column({ field: "created_at", type: DataType.DATE, defaultValue: DataType.NOW })
   declare createdAt: Date;
+
+  @HasOne(() => User)
+  declare user: User;
 }

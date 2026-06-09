@@ -11,9 +11,10 @@ export class AntiCheatService {
    */
   public static async checkUserAction(testId: string, ipAddress: string | null, actionType: string, details?: any): Promise<void> {
     try {
-      // 1. Check for Application Quit
-      if (actionType === 'APP_ON_QUIT') {
-        await this.recordViolation(testId, ipAddress, 'APP_ON_QUIT', 'Application quit unexpectedly.');
+      // 1. Dynamic alerts from frontend (e.g. APP_ON_QUIT)
+      if (actionType === 'alert' && details && details.type) {
+        const message = details.message || `Violation detected: ${details.type}`;
+        await this.recordViolation(testId, ipAddress, details.type, message);
       }
 
       // 2. Multiple IPs for same user OR Multiple users on same IP

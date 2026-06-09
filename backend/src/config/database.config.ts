@@ -10,6 +10,8 @@ import { UserActionLog } from "../models/user-action-log.model";
 import { ViolationLog } from "../models/violation-log.model";
 import { Message } from "../models/message.model";
 import { SystemSettings } from "../models/system-settings.model";
+import { LoginRequest } from "../models/login-request.model";
+import { UnblockedDevice } from "../models/unblocked-device.model";
 
 const dbStorage =
   process.env.DB_STORAGE || path.join(__dirname, "../../database.sqlite");
@@ -32,6 +34,8 @@ export const sequelize = new Sequelize({
     ViolationLog,
     Message,
     SystemSettings,
+    LoginRequest,
+    UnblockedDevice,
   ],
   logging: process.env.NODE_ENV === "development" ? console.log : false,
   pool: {

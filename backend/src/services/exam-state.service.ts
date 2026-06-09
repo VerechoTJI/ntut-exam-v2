@@ -43,6 +43,11 @@ export class ExamStateService {
       } else {
         await SystemSettingsService.createSetting("exam_state", newState);
       }
+      
+      // Auto-close device registration when exam starts
+      if (newState === ExamState.IN_PROGRESS) {
+        await SystemSettingsService.setAllowDeviceRegistration(false);
+      }
     } catch (error: any) {
       logger.error(`Failed to update exam_state to ${newState}:`, error);
       throw error;

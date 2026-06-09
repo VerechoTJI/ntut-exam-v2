@@ -3,7 +3,7 @@ import { HttpError } from "../utils/http-error";
 import logger from "../utils/logger.util";
 
 export type SystemSettingKey = string;
-export const PROTECTED_SETTINGS_KEYS: SystemSettingKey[] = ["exam_config"];
+export const PROTECTED_SETTINGS_KEYS: SystemSettingKey[] = ["exam_config", "allow_device_registration"];
 
 export class SystemSettingsService {
   static async createSetting(key: SystemSettingKey, value: any): Promise<void> {
@@ -81,6 +81,21 @@ export class SystemSettingsService {
       await this.updateSetting("exam_config", value);
     } else {
       await this.createSetting("exam_config", value);
+    }
+  }
+
+  static async getAllowDeviceRegistration(): Promise<boolean> {
+    const value = await this.getSetting<boolean>("allow_device_registration");
+    // Default to true if not set
+    return value === null ? true : value;
+  }
+
+  static async setAllowDeviceRegistration(value: boolean): Promise<void> {
+    const existing = await SystemSettings.findOne({ where: { name: "allow_device_registration" } });
+    if (existing) {
+      await this.updateSetting("allow_device_registration", value);
+    } else {
+      await this.createSetting("allow_device_registration", value);
     }
   }
 }

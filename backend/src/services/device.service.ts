@@ -1,6 +1,10 @@
 import { DeviceKeyMap } from "../models/device-key-map.model";
 import { CryptoService } from "./crypto.service";
 import { HttpError } from "../utils/http-error";
+import { SystemSettingsService } from "./system-settings.service";
+import { LoginRequest } from "../models/login-request.model";
+import { UnblockedDevice } from "../models/unblocked-device.model";
+import { User } from "../models/user.model";
 
 export class DeviceService {
   /**
@@ -17,13 +21,54 @@ export class DeviceService {
       throw new HttpError(400, `Failed to decrypt AES key: ${error.message}`);
     }
 
-    const existing = await DeviceKeyMap.findOne({ where: { deviceUuid } });
+    const existing = await DeviceKeyMap.findOne({ where: { deviceUuid }, include: [User] });
+    
+    // Check if device is unblocked
+    const unblocked = await UnblockedDevice.findOne({
+      where: { targetType: "UUID", targetValue: deviceUuid }
+    });
+
     if (existing) {
-      existing.clientAesKey = clientAesKeyBuffer.toString("hex");
-      existing.ipAddress = ipAddress;
-      existing.isOnline = true;
-      await existing.save();
+      // Secondary Binding: This device is already registered, and client is sending a new AES key.
+      if (!unblocked) {
+        // Block it and log request
+        await LoginRequest.create({
+          ipAddress,
+          deviceUuid,
+          testId: existing.user ? existing.user.testId : null,
+          type: "SECONDARY",
+          status: "PENDING"
+        });
+        throw new HttpError(403, "Secondary binding blocked. A request has been sent to the TA.");
+      } else {
+        // Unblocked: Consume the pass and allow binding
+        await unblocked.destroy();
+        existing.clientAesKey = clientAesKeyBuffer.toString("hex");
+        existing.ipAddress = ipAddress;
+        existing.isOnline = true;
+        await existing.save();
+      }
     } else {
+      // First-Time Binding
+      const allowRegistration = await SystemSettingsService.getAllowDeviceRegistration();
+      if (!allowRegistration && !unblocked) {
+        // Try to guess testId by IP if possible
+        const userByIp = await User.findOne({ where: { ipAddress } });
+        await LoginRequest.create({
+          ipAddress,
+          deviceUuid,
+          testId: userByIp ? userByIp.testId : null,
+          type: "FIRST_TIME",
+          status: "PENDING"
+        });
+        throw new HttpError(403, "Registration is closed. A request has been sent to the TA.");
+      }
+      
+      // Consume pass if it was used to bypass
+      if (!allowRegistration && unblocked) {
+        await unblocked.destroy();
+      }
+
       await DeviceKeyMap.create({
         deviceUuid,
         ipAddress,
