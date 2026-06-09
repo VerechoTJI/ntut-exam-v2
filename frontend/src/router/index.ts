@@ -33,6 +33,11 @@ const router = createRouter({
       component: () => import('../views/log/LogView.vue')
     },
     {
+      path: '/connection',
+      name: 'connection',
+      component: () => import('../views/connection/ConnectionView.vue')
+    },
+    {
       path: '/device',
       name: 'device',
       component: () => import('../views/device/DeviceView.vue')

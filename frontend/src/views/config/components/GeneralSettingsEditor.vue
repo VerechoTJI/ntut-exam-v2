@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import type { ExamConfig } from '../../../types/config';
 
 const showCsvDialog = ref(false);
@@ -11,6 +11,14 @@ const emit = defineEmits(['update:modelValue']);
 const config = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
+});
+
+onMounted(() => {
+  if (config.value && config.value.judgerSettings) {
+    if (!config.value.judgerSettings.compareMode) {
+      config.value.judgerSettings.compareMode = 'loose';
+    }
+  }
 });
 
 const addEnvVar = () => {
@@ -74,11 +82,14 @@ const importCsv = () => {
       <v-col cols="12">
         <h3 class="text-h6 mb-2">Judger Settings</h3>
         <v-row v-if="config.judgerSettings">
-          <v-col cols="6">
+          <v-col cols="4">
             <v-text-field v-model.number="config.judgerSettings.timeLimit" label="Time Limit (ms)" type="number" outlined :readonly="props.disabled"></v-text-field>
           </v-col>
-          <v-col cols="6">
+          <v-col cols="4">
             <v-text-field v-model.number="config.judgerSettings.memoryLimit" label="Memory Limit (MB)" type="number" outlined :readonly="props.disabled"></v-text-field>
+          </v-col>
+          <v-col cols="4">
+            <v-select v-model="config.judgerSettings.compareMode" :items="[{title: 'Strict Match (嚴格比對)', value: 'strict'}, {title: 'Whitespace-insensitive (標記忽略比對)', value: 'loose'}]" label="Compare Mode" outlined :readonly="props.disabled"></v-select>
           </v-col>
         </v-row>
       </v-col>

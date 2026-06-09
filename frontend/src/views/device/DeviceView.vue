@@ -1,26 +1,36 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useDeviceStore } from '../../stores/device.store';
+import { onMounted, ref, computed } from 'vue';
+import { useConnectionStore } from '../../stores/connection.store';
 import DeviceGrid from './components/DeviceGrid.vue';
 
-const deviceStore = useDeviceStore();
+const connectionStore = useConnectionStore();
 const itemsPerRow = ref(4);
 
 onMounted(() => {
-  deviceStore.fetchDevices();
+  connectionStore.fetchDevices();
 });
 
 function refreshDevices() {
-  deviceStore.fetchDevices();
+  connectionStore.fetchDevices();
 }
+
+const formattedDevices = computed(() => {
+  return connectionStore.devices.map(d => ({
+    id: d.user?.testId || '',
+    name: d.user?.name || '',
+    ipAddress: d.ipAddress,
+    deviceUuid: d.deviceUuid,
+    isOnline: d.isOnline
+  }));
+});
 </script>
 
 <template>
   <v-container fluid class="pa-6">
     <v-row class="mb-4 align-center">
       <v-col cols="12" sm="6">
-        <h1 class="text-h4 font-weight-bold">Device Connection Status</h1>
-        <p class="text-subtitle-1 text-medium-emphasis">Monitor lab PC active connections and bindings</p>
+        <h1 class="text-h4 font-weight-bold">Device Monitor</h1>
+        <p class="text-subtitle-1 text-medium-emphasis">Live view of student IP and device bindings</p>
       </v-col>
       
       <v-col cols="12" sm="6" class="d-flex justify-sm-end align-center">
@@ -32,7 +42,7 @@ function refreshDevices() {
           <v-slider
             v-model="itemsPerRow"
             :min="2"
-            :max="8"
+            :max="20"
             :step="1"
             thumb-label
             hide-details
@@ -45,7 +55,7 @@ function refreshDevices() {
           color="primary"
           variant="elevated"
           prepend-icon="mdi-refresh"
-          :loading="deviceStore.loading"
+          :loading="connectionStore.loading"
           @click="refreshDevices"
           class="rounded-lg"
         >
@@ -56,17 +66,18 @@ function refreshDevices() {
 
     <!-- Error Alert -->
     <v-alert
-      v-if="deviceStore.error"
+      v-if="connectionStore.error"
       type="error"
       title="Error Loading Devices"
       class="mb-6 rounded-lg"
       closable
+      @click:close="connectionStore.error = null"
     >
-      {{ deviceStore.error }}
+      {{ connectionStore.error }}
     </v-alert>
 
     <!-- Loading Skeleton Grid -->
-    <div v-if="deviceStore.loading && !deviceStore.devices.length" class="text-center py-12">
+    <div v-if="connectionStore.loading && !connectionStore.devices.length" class="text-center py-12">
       <v-progress-circular
         indeterminate
         color="primary"
@@ -77,22 +88,20 @@ function refreshDevices() {
 
     <!-- Empty State -->
     <v-card 
-      v-else-if="!deviceStore.devices.length" 
+      v-else-if="!connectionStore.devices.length" 
       class="text-center py-12 border-dashed rounded-xl"
       variant="flat"
     >
       <v-card-text>
         <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-monitor-off</v-icon>
         <div class="text-h6 text-grey-darken-1 font-weight-bold">No Devices Found</div>
-        <div class="text-subtitle-2 text-grey-darken-1 mt-1">Please ensure the database is initialized with student accounts.</div>
       </v-card-text>
     </v-card>
 
     <!-- Devices Grid -->
     <DeviceGrid
       v-else
-      :devices="deviceStore.devices"
-      :items-row="itemsPerRow"
+      :devices="formattedDevices"
       :items-per-row="itemsPerRow"
     />
   </v-container>
@@ -100,7 +109,7 @@ function refreshDevices() {
 
 <style scoped>
 .max-width-slider {
-  max-width: 200px;
+  max-width: 300px;
 }
 .border-dashed {
   border: 2px dashed rgba(0, 0, 0, 0.1) !important;

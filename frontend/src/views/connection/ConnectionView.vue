@@ -1,0 +1,318 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue';
+import { useConnectionStore } from '../../stores/connection.store';
+
+const connectionStore = useConnectionStore();
+
+// Manual Unblock Form
+const manualUnblockType = ref<'IP' | 'UUID'>('UUID');
+const manualUnblockValue = ref('');
+const manualUnblockAction = ref<'KEEP_USER' | 'UNBIND_USER'>('KEEP_USER');
+const isUnblocking = ref(false);
+
+const headers = [
+  { title: 'Device UUID', key: 'deviceUuid', align: 'start' },
+  { title: 'IP Address', key: 'ipAddress' },
+  { title: 'Student ID', key: 'user.testId' },
+  { title: 'Student Name', key: 'user.name' },
+  { title: 'Status', key: 'isOnline' },
+  { title: 'Actions', key: 'actions', align: 'end', sortable: false }
+] as const;
+
+const requestHeaders = [
+  { title: 'Type', key: 'type', align: 'start' },
+  { title: 'Device UUID', key: 'deviceUuid' },
+  { title: 'IP Address', key: 'ipAddress' },
+  { title: 'Student ID', key: 'testId' },
+  { title: 'Time', key: 'createdAt' },
+  { title: 'Actions', key: 'actions', align: 'end', sortable: false }
+] as const;
+
+onMounted(() => {
+  refreshData();
+});
+
+async function refreshData() {
+  await Promise.all([
+    connectionStore.fetchSettings(),
+    connectionStore.fetchDevices(),
+    connectionStore.fetchLoginRequests()
+  ]);
+}
+
+async function toggleRegistration(val: boolean | null) {
+  if (val !== null) {
+    await connectionStore.updateSettings(val);
+  }
+}
+
+async function submitManualUnblock() {
+  if (!manualUnblockValue.value) return;
+  isUnblocking.value = true;
+  try {
+    await connectionStore.manualUnblock(manualUnblockType.value, manualUnblockValue.value, manualUnblockAction.value);
+    manualUnblockValue.value = '';
+    // Show success snackbar if needed
+  } finally {
+    isUnblocking.value = false;
+  }
+}
+
+async function allowSecondaryLogin(uuid: string) {
+  await connectionStore.manualUnblock('UUID', uuid, 'KEEP_USER');
+  // Optional: show snackbar
+}
+
+async function unbindDevice(uuid: string) {
+  if (confirm('Are you sure you want to unbind this device from the student?')) {
+    await connectionStore.unbindDevice(uuid);
+  }
+}
+</script>
+
+<template>
+  <v-container fluid class="pa-6">
+    <v-row class="mb-4 align-center">
+      <v-col cols="12" sm="6">
+        <h1 class="text-h4 font-weight-bold">Connection Management</h1>
+        <p class="text-subtitle-1 text-medium-emphasis">Manage device registrations and login requests</p>
+      </v-col>
+      <v-col cols="12" sm="6" class="d-flex justify-sm-end align-center">
+        <v-btn
+          color="primary"
+          variant="elevated"
+          prepend-icon="mdi-refresh"
+          :loading="connectionStore.loading"
+          @click="refreshData"
+          class="rounded-lg"
+        >
+          Refresh Data
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <v-alert
+      v-if="connectionStore.error"
+      type="error"
+      class="mb-6 rounded-lg"
+      closable
+      @click:close="connectionStore.error = null"
+    >
+      {{ connectionStore.error }}
+    </v-alert>
+
+    <v-row>
+      <!-- Left Column: Settings & Unblock -->
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl mb-6 shadow-card" elevation="2">
+          <v-card-title class="font-weight-bold pt-4 px-6 d-flex align-center">
+            <v-icon color="primary" class="mr-2">mdi-cog</v-icon>
+            Global Settings
+          </v-card-title>
+          <v-card-text class="px-6 pb-6">
+            <v-switch
+              :model-value="connectionStore.allowRegistration"
+              @update:model-value="toggleRegistration"
+              color="success"
+              inset
+              hide-details
+            >
+              <template v-slot:label>
+                <span class="font-weight-medium">Allow New Device Registration</span>
+              </template>
+            </v-switch>
+            <div class="text-caption text-medium-emphasis mt-2">
+              When disabled, new devices cannot bind. Existing bound devices require TA approval for secondary logins.
+            </div>
+          </v-card-text>
+        </v-card>
+
+        <v-card class="rounded-xl shadow-card" elevation="2">
+          <v-card-title class="font-weight-bold pt-4 px-6 d-flex align-center">
+            <v-icon color="secondary" class="mr-2">mdi-lock-open-variant</v-icon>
+            Manual Unblock
+          </v-card-title>
+          <v-card-text class="px-6 pb-6">
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              Manually allow a specific device to log in or re-bind.
+            </p>
+            <v-form @submit.prevent="submitManualUnblock">
+              <v-select
+                v-model="manualUnblockType"
+                :items="['UUID', 'IP']"
+                label="Target Type"
+                variant="outlined"
+                density="compact"
+                class="mb-2"
+              ></v-select>
+              <v-text-field
+                v-model="manualUnblockValue"
+                label="Target Value"
+                variant="outlined"
+                density="compact"
+                class="mb-2"
+                :placeholder="manualUnblockType === 'IP' ? 'e.g. 192.168.1.10' : 'e.g. 123e4567-e89b...'"
+              ></v-text-field>
+              <v-radio-group v-model="manualUnblockAction" density="compact" class="mb-2" hide-details>
+                <v-radio label="Allow Original User" value="KEEP_USER" color="secondary"></v-radio>
+                <v-radio label="Unbind & Allow New User" value="UNBIND_USER" color="error"></v-radio>
+              </v-radio-group>
+              <v-btn
+                type="submit"
+                color="secondary"
+                block
+                variant="flat"
+                class="rounded-lg text-none font-weight-bold mt-2"
+                :loading="isUnblocking"
+                :disabled="!manualUnblockValue"
+              >
+                Add to Allowed List
+              </v-btn>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Right Column: Login Requests -->
+      <v-col cols="12" md="8">
+        <v-card class="rounded-xl shadow-card h-100" elevation="2">
+          <v-card-title class="font-weight-bold pt-4 px-6 d-flex align-center justify-space-between">
+            <div>
+              <v-icon color="warning" class="mr-2">mdi-shield-alert</v-icon>
+              Pending Login Requests
+              <v-chip color="warning" size="small" class="ml-2 font-weight-bold" v-if="connectionStore.loginRequests.length">
+                {{ connectionStore.loginRequests.length }}
+              </v-chip>
+            </div>
+          </v-card-title>
+          
+          <v-data-table
+            :headers="requestHeaders"
+            :items="connectionStore.loginRequests"
+            :items-per-page="5"
+            hover
+            class="px-2"
+          >
+            <template v-slot:item.type="{ item }">
+              <v-chip :color="item.type === 'FIRST_TIME' ? 'info' : 'warning'" size="small" variant="flat">
+                {{ item.type === 'FIRST_TIME' ? 'New Device' : 'Secondary Login' }}
+              </v-chip>
+            </template>
+            <template v-slot:item.createdAt="{ item }">
+              {{ new Date(item.createdAt).toLocaleTimeString() }}
+            </template>
+            <template v-slot:item.actions="{ item }">
+              <div class="d-flex justify-end gap-2">
+                <v-menu location="bottom end">
+                  <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" icon="mdi-check" color="success" size="small" variant="tonal"></v-btn>
+                  </template>
+                  <v-list density="compact" class="rounded-lg">
+                    <v-list-item @click="connectionStore.approveRequest(item.id, 'KEEP_USER')">
+                      <template v-slot:prepend><v-icon color="success">mdi-lock-open-variant</v-icon></template>
+                      <v-list-item-title>Allow Original User</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item @click="connectionStore.approveRequest(item.id, 'UNBIND_USER')">
+                      <template v-slot:prepend><v-icon color="error">mdi-account-switch</v-icon></template>
+                      <v-list-item-title>Unbind & Allow New User</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+                <v-btn icon="mdi-close" color="error" size="small" variant="tonal" @click="connectionStore.rejectRequest(item.id)"></v-btn>
+              </div>
+            </template>
+            <template v-slot:no-data>
+              <div class="py-8 text-center text-medium-emphasis">
+                <v-icon size="48" color="grey-lighten-2" class="mb-2">mdi-check-all</v-icon>
+                <div>No pending login requests</div>
+              </div>
+            </template>
+          </v-data-table>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Bottom Section: All Devices -->
+    <v-row class="mt-6">
+      <v-col cols="12">
+        <v-card class="rounded-xl shadow-card" elevation="2">
+          <v-card-title class="font-weight-bold pt-4 px-6 d-flex align-center">
+            <v-icon color="primary" class="mr-2">mdi-desktop-mac</v-icon>
+            All Registered Devices
+          </v-card-title>
+
+          <v-data-table
+            :headers="headers"
+            :items="connectionStore.devices"
+            :items-per-page="10"
+            hover
+            class="px-2"
+          >
+            <template v-slot:item.isOnline="{ item }">
+              <v-chip :color="item.isOnline ? 'success' : 'grey'" size="small" variant="flat">
+                {{ item.isOnline ? 'Online' : 'Offline' }}
+              </v-chip>
+            </template>
+            <template v-slot:item.user.testId="{ item }">
+              <span v-if="item.user" class="font-weight-medium">{{ item.user.testId }}</span>
+              <span v-else class="text-medium-emphasis text-caption">Not Bound</span>
+            </template>
+            <template v-slot:item.user.name="{ item }">
+              <span v-if="item.user">{{ item.user.name }}</span>
+              <span v-else class="text-medium-emphasis text-caption">-</span>
+            </template>
+            <template v-slot:item.actions="{ item }">
+              <div class="d-flex justify-end gap-2">
+                <v-tooltip text="Allow Secondary Login" location="top">
+                  <template v-slot:activator="{ props }">
+                    <v-btn 
+                      v-bind="props"
+                      icon="mdi-lock-open-variant" 
+                      color="secondary" 
+                      size="small" 
+                      variant="tonal" 
+                      @click="allowSecondaryLogin(item.deviceUuid)"
+                    ></v-btn>
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Unbind Device from Student" location="top">
+                  <template v-slot:activator="{ props }">
+                    <v-btn 
+                      v-bind="props"
+                      icon="mdi-link-variant-off" 
+                      color="error" 
+                      size="small" 
+                      variant="tonal" 
+                      :disabled="!item.user"
+                      @click="unbindDevice(item.deviceUuid)"
+                    ></v-btn>
+                  </template>
+                </v-tooltip>
+              </div>
+            </template>
+            <template v-slot:no-data>
+              <div class="py-8 text-center text-medium-emphasis">
+                <v-icon size="48" color="grey-lighten-2" class="mb-2">mdi-monitor-off</v-icon>
+                <div>No devices registered yet</div>
+              </div>
+            </template>
+          </v-data-table>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<style scoped>
+.shadow-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.shadow-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
+}
+.gap-2 {
+  gap: 8px;
+}
+</style>

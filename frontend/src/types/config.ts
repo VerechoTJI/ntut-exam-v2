@@ -55,6 +55,7 @@ export interface ExamConfig {
     judgerSettings: {
         timeLimit: number;
         memoryLimit: number;
+        compareMode?: "strict" | "loose";
     };
     environmentVariables?: Record<string, string | number | boolean>;
     accessibleUsers: AccessUser[];

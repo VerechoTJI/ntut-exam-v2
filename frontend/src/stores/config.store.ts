@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import axios from 'axios';
+import { useManageStore } from './manage.store';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -52,6 +53,8 @@ export const useConfigStore = defineStore('config', () => {
     try {
       await axios.post(`${BACKEND_URL}/admin/init`);
       isInitialized.value = true;
+      const manageStore = useManageStore();
+      manageStore.examState = 'NOT_STARTED';
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to initialize database';
       throw err;
@@ -67,7 +70,9 @@ export const useConfigStore = defineStore('config', () => {
       await axios.post(`${BACKEND_URL}/admin/init/reset`, {
         confirm: "RESET"
       });
-      isInitialized.value = true; // Still initialized after reset, just cleared data
+      isInitialized.value = false;
+      const manageStore = useManageStore();
+      manageStore.examState = 'UNINITIALIZED';
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to reset database';
       throw err;
