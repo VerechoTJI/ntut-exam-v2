@@ -29,9 +29,11 @@ export class DeviceService {
       where: { targetType: "UUID", targetValue: deviceUuid }
     });
 
+    const isSimulationMode = process.env.LOAD_TEST_MODE === 'simulation';
+
     if (existing) {
       // Secondary Binding: This device is already registered, and client is sending a new AES key.
-      if (!unblocked) {
+      if (!unblocked && !isSimulationMode) {
         // Block it and log request
         await LoginRequest.create({
           ipAddress,
@@ -43,8 +45,8 @@ export class DeviceService {
         SocketService.triggerDataUpdateEvent('connection');
         throw new HttpError(403, "Secondary binding blocked. A request has been sent to the TA.");
       } else {
-        // Unblocked: Consume the pass and allow binding
-        await unblocked.destroy();
+        // Unblocked or Simulation Mode: Consume the pass and allow binding
+        if (unblocked) await unblocked.destroy();
         existing.clientAesKey = clientAesKeyBuffer.toString("hex");
         existing.ipAddress = ipAddress;
         existing.isOnline = true;
@@ -55,7 +57,7 @@ export class DeviceService {
     } else {
       // First-Time Binding
       const allowRegistration = await SystemSettingsService.getAllowDeviceRegistration();
-      if (!allowRegistration && !unblocked) {
+      if (!allowRegistration && !unblocked && !isSimulationMode) {
         // Try to guess testId by IP if possible
         const userByIp = await User.findOne({ where: { ipAddress } });
         await LoginRequest.create({

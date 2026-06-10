@@ -68,9 +68,16 @@ export class UserController {
    * Authenticate student and bind device.
    */
   static async login(req: Request, res: Response, next: NextFunction) {
-    const { iv, ciphertext, tag, device_uuid } = req.body;
-    if (!iv || !ciphertext || !tag || !device_uuid) {
-      return next(new HttpError(400, "Bad Request: Missing encrypted payload fields"));
+    if (process.env.LOAD_TEST_MODE === 'pure') {
+      const { device_uuid } = req.body;
+      if (!device_uuid) {
+        return next(new HttpError(400, "Bad Request: Missing device_uuid in pure mode"));
+      }
+    } else {
+      const { iv, ciphertext, tag, device_uuid } = req.body;
+      if (!iv || !ciphertext || !tag || !device_uuid) {
+        return next(new HttpError(400, "Bad Request: Missing encrypted payload fields"));
+      }
     }
 
     try {
@@ -112,7 +119,10 @@ export class UserController {
       const lastMessageId = decryptedBody.lastMessageId || 0;
       const messages = await MessageService.getMessagesAfterId(Number(lastMessageId));
 
-      const aesKey = await DeviceService.getAesKey(deviceUuid);
+      let aesKey: any = null;
+      if (process.env.LOAD_TEST_MODE !== 'pure') {
+        aesKey = await DeviceService.getAesKey(deviceUuid);
+      }
       const encryptedResult = CryptoService.encryptAESGCM(JSON.stringify(messages), aesKey);
 
       res.status(200).json({

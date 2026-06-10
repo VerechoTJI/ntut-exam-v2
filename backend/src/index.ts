@@ -31,6 +31,7 @@ app.get('/health', async (req, res) => {
     res.status(200).json({
       status: 'UP',
       database: 'UP',
+      loadTestMode: process.env.LOAD_TEST_MODE || 'NOT SET',
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {

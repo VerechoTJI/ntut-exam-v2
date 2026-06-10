@@ -7,19 +7,27 @@ import { AesEncryptedPayload, LoginDecryptedPayload } from "../types/crypto.type
 import { UnblockedDevice } from "../models/unblocked-device.model";
 import { LoginRequest } from "../models/login-request.model";
 import { SystemSettingsService } from "./system-settings.service";
+import { ViolationLog } from "../models/violation-log.model";
 import { Op } from "sequelize";
 
 export class AuthService {
   static async loginAndBind(payload: AesEncryptedPayload, clientIp: string): Promise<string> {
     const { device_uuid: deviceUuid } = payload;
-    const aesKey = await DeviceService.getAesKey(deviceUuid);
+    let aesKey: any;
+    if (process.env.LOAD_TEST_MODE !== 'pure') {
+      aesKey = await DeviceService.getAesKey(deviceUuid);
+    }
 
     let decryptedData: LoginDecryptedPayload;
-    try {
-      const decryptedText = CryptoService.decryptAESGCM(payload, aesKey);
-      decryptedData = JSON.parse(decryptedText);
-    } catch (error: any) {
-      throw new HttpError(400, `Decryption or parsing of login payload failed: ${error.message}`);
+    if (process.env.LOAD_TEST_MODE === 'pure') {
+      decryptedData = payload as unknown as LoginDecryptedPayload;
+    } else {
+      try {
+        const decryptedText = CryptoService.decryptAESGCM(payload, aesKey);
+        decryptedData = JSON.parse(decryptedText);
+      } catch (error: any) {
+        throw new HttpError(400, `Decryption or parsing of login payload failed: ${error.message}`);
+      }
     }
 
     const { testId } = decryptedData;
@@ -27,9 +35,13 @@ export class AuthService {
       throw new HttpError(400, "Invalid payload: testId is required");
     }
 
-    const user = await User.findOne({ where: { testId } });
+    let user = await User.findOne({ where: { testId } });
     if (!user) {
-      throw new HttpError(401, `Authentication failed: Student ID "${testId}" not found`);
+      if (process.env.LOAD_TEST_MODE === 'pure' || process.env.LOAD_TEST_MODE === 'simulation') {
+        user = await User.create({ testId, name: `k6_${testId}`, ipAddress: clientIp.replace(/^::ffff:/, "") });
+      } else {
+        throw new HttpError(401, `Authentication failed: Student ID "${testId}" not found`);
+      }
     }
 
     const cleanClientIp = clientIp.replace(/^::ffff:/, "");
@@ -48,7 +60,15 @@ export class AuthService {
     } else {
       if (user.deviceUuid) {
         if (user.deviceUuid !== deviceUuid) {
-          throw new HttpError(403, "This account is already logged in on another device, please contact the TA");
+          await ViolationLog.create({
+            testId,
+            time: new Date(),
+            ipAddress: cleanClientIp,
+            type: 'MULTI_LOGIN_WARNING',
+            message: `Student logged in from multiple devices (Previous: ${user.deviceUuid}, New: ${deviceUuid})`
+          });
+          user.deviceUuid = deviceUuid;
+          user.ipAddress = cleanClientIp;
         }
       } else {
         if (!user.ipAddress) {
@@ -67,6 +87,13 @@ export class AuthService {
           }
           user.deviceUuid = deviceUuid;
         }
+      }
+    }
+
+    if (process.env.LOAD_TEST_MODE === 'pure') {
+      const device = await DeviceKeyMap.findOne({ where: { deviceUuid } });
+      if (!device) {
+        await DeviceKeyMap.create({ deviceUuid, ipAddress: cleanClientIp, clientAesKey: 'pure_mode', isOnline: true });
       }
     }
 

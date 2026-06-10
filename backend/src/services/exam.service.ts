@@ -10,38 +10,50 @@ import logger from "../utils/logger.util";
 export class ExamService {
   static async getSecureConfig(payload: AesEncryptedPayload, decryptedBody?: any): Promise<AesEncryptedPayload> {
     const { device_uuid: deviceUuid } = payload;
-    const aesKey = await DeviceService.getAesKey(deviceUuid);
+    let aesKey: any = null;
+    if (process.env.LOAD_TEST_MODE !== 'pure') {
+      aesKey = await DeviceService.getAesKey(deviceUuid);
+    }
 
     let decrypted = decryptedBody;
     if (!decrypted) {
+      if (process.env.LOAD_TEST_MODE === 'pure') {
+        decrypted = payload as unknown as any;
+      } else {
+        try {
+          const plaintext = CryptoService.decryptAESGCM(payload, aesKey);
+          decrypted = JSON.parse(plaintext);
+        } catch (error: any) {
+          throw new HttpError(400, `Failed to decrypt request: ${error.message}`);
+        }
+
+        const { timestamp, nonce } = decrypted;
+        if (timestamp === undefined || nonce === undefined) {
+          throw new HttpError(400, "Missing timestamp or nonce in encrypted payload");
+        }
+        ReplayProtectionService.verifyAndSaveNonce(nonce, timestamp);
+      }
+    }
+
+    let sessionToken: string;
+    if (process.env.LOAD_TEST_MODE === 'pure' && !decrypted.session_token) {
+      // In pure mode, testId may be passed directly if session_token is not
+    } else {
+      sessionToken = decrypted.session_token;
+      if (!sessionToken) {
+        throw new HttpError(400, "Missing required session_token in decrypted payload");
+      }
+
+      let tokenPayload: any;
       try {
-        const plaintext = CryptoService.decryptAESGCM(payload, aesKey);
-        decrypted = JSON.parse(plaintext);
+        tokenPayload = CryptoService.verifySessionToken(sessionToken, aesKey);
       } catch (error: any) {
-        throw new HttpError(400, `Failed to decrypt request: ${error.message}`);
+        throw new HttpError(401, `Session validation failed: ${error.message}`);
       }
 
-      const { timestamp, nonce } = decrypted;
-      if (timestamp === undefined || nonce === undefined) {
-        throw new HttpError(400, "Missing timestamp or nonce in encrypted payload");
+      if (tokenPayload.deviceUuid !== deviceUuid) {
+        throw new HttpError(401, "Security violation: Token device UUID mismatch");
       }
-      ReplayProtectionService.verifyAndSaveNonce(nonce, timestamp);
-    }
-
-    const { session_token: sessionToken } = decrypted;
-    if (!sessionToken) {
-      throw new HttpError(400, "Missing required session_token in decrypted payload");
-    }
-
-    let tokenPayload: any;
-    try {
-      tokenPayload = CryptoService.verifySessionToken(sessionToken, aesKey);
-    } catch (error: any) {
-      throw new HttpError(401, `Session validation failed: ${error.message}`);
-    }
-
-    if (tokenPayload.deviceUuid !== deviceUuid) {
-      throw new HttpError(401, "Security violation: Token device UUID mismatch");
     }
 
     let configContent = "{}";
