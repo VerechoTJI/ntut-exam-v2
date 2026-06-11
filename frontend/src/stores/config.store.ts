@@ -18,7 +18,21 @@ export const useConfigStore = defineStore('config', () => {
       const res = await axios.get(`${BACKEND_URL}/admin/config`);
       config.value = res.data;
     } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to load config';
+      if (err.response?.status === 404 && err.response?.data?.error === 'CONFIG_NOT_INITIALIZED') {
+        config.value = {
+          testTitle: "",
+          description: "",
+          judgerSettings: {
+            timeLimit: 1000,
+            memoryLimit: 256,
+            compareMode: "strict",
+          },
+          accessibleUsers: [],
+          sections: []
+        };
+      } else {
+        error.value = err.response?.data?.error || err.message || 'Failed to load config';
+      }
     } finally {
       loading.value = false;
     }

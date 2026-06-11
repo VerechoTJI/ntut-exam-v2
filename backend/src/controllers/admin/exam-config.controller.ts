@@ -54,7 +54,7 @@ export class ExamConfigController {
     try {
       const config = await SystemSettingsService.getExamConfig();
       if (!config) {
-        throw new HttpError(404, "Not Found: No exam config found");
+        throw new HttpError(404, "CONFIG_NOT_INITIALIZED");
       }
       res.status(200).json(config);
     } catch (error) {
