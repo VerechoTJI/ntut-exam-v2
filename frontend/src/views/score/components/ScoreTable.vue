@@ -34,15 +34,31 @@ const getSectionSubtaskCount = (section: any) => {
   }, 0);
 };
 
+// Helper: Get global puzzle index
+const getPuzzleGlobalIndex = (puzzleId: string) => {
+  if (!props.config?.sections) return -1;
+  return props.config.sections.flatMap((s: any) => s.puzzles || []).findIndex((p: any) => p.id === puzzleId);
+};
+
+const getPuzzleResult = (item: any, puzzleId: string) => {
+  if (!item.puzzleResults) return undefined;
+  let res = item.puzzleResults[puzzleId];
+  if (!res) {
+    const idx = getPuzzleGlobalIndex(puzzleId);
+    if (idx !== -1) res = item.puzzleResults[`Q${idx + 1}`];
+  }
+  return res;
+};
+
 // Helper: Get status of a subtask ('T' or 'F')
 const getSubtaskStatus = (item: any, puzzleId: string, subtaskIdx: any) => {
-  const pResult = item.puzzleResults?.[puzzleId];
+  const pResult = getPuzzleResult(item, puzzleId);
   if (pResult && pResult.subtasks) {
     const idx = Number(subtaskIdx);
     if (pResult.subtasks[idx]) {
       const st = pResult.subtasks[idx];
-      const visPassed = st.visible ? st.visible.every((v: any) => v.status === 'AC') : true;
-      const hidPassed = st.hidden ? st.hidden.every((h: any) => h.status === 'AC') : true;
+      const visPassed = st.visible ? st.visible.every((v: any) => (v.status || v.statusCode) === 'AC') : true;
+      const hidPassed = st.hidden ? st.hidden.every((h: any) => (h.status || h.statusCode) === 'AC') : true;
       return (visPassed && hidPassed) ? 'T' : 'F';
     }
   }

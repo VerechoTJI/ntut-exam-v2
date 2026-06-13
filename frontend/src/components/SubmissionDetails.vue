@@ -26,18 +26,37 @@ const getSpecialRuleColor = (ruleResult: any) => {
   return 'error';
 };
 
+const getPuzzleGlobalIndex = (puzzleId: string) => {
+  if (!props.examConfig?.sections) return -1;
+  return props.examConfig.sections.flatMap((s: any) => s.puzzles || []).findIndex((p: any) => p.id === puzzleId);
+};
+
+const getPuzzleResult = (puzzleId: string) => {
+  if (!props.scoreRecord?.puzzleResults) return null;
+  let res = props.scoreRecord.puzzleResults[puzzleId];
+  if (!res) {
+    const idx = getPuzzleGlobalIndex(puzzleId);
+    if (idx !== -1) res = props.scoreRecord.puzzleResults[`Q${idx + 1}`];
+  }
+  return res;
+};
+
 const checkSubtaskPassed = (stRes: any, subtask: any) => {
   if (!stRes) return false;
   
   const allVisible = subtask.visible?.length > 0 
-    ? subtask.visible.every((_: any, i: number) => stRes.visible && stRes.visible[i]?.status === 'AC') 
+    ? subtask.visible.every((_: any, i: number) => stRes.visible && (stRes.visible[i]?.status || stRes.visible[i]?.statusCode) === 'AC') 
     : true;
     
   const allHidden = subtask.hidden?.length > 0 
-    ? subtask.hidden.every((_: any, i: number) => stRes.hidden && stRes.hidden[i]?.status === 'AC') 
+    ? subtask.hidden.every((_: any, i: number) => stRes.hidden && (stRes.hidden[i]?.status || stRes.hidden[i]?.statusCode) === 'AC') 
     : true;
     
   return allVisible && allHidden;
+};
+
+const getStatus = (tcRes: any) => {
+  return tcRes?.status || tcRes?.statusCode || '';
 };
 </script>
 
@@ -78,12 +97,12 @@ const checkSubtaskPassed = (stRes: any, subtask: any) => {
                 </v-chip>
               </h2>
               
-              <template v-if="scoreRecord.puzzleResults && scoreRecord.puzzleResults[puzzle.id]">
-                <div v-if="scoreRecord.puzzleResults[puzzle.id].specialRuleResults?.length" class="mb-4">
+              <template v-if="getPuzzleResult(puzzle.id)">
+                <div v-if="getPuzzleResult(puzzle.id).specialRuleResults?.length" class="mb-4">
                   <h3 class="text-subtitle-1 font-weight-bold mb-2">Special Judge (特殊規則)</h3>
                   <v-card variant="outlined" class="bg-grey-lighten-4">
                     <v-list density="compact" class="bg-transparent">
-                      <v-list-item v-for="(sr, srIdx) in scoreRecord.puzzleResults[puzzle.id].specialRuleResults" :key="'sr-'+srIdx">
+                      <v-list-item v-for="(sr, srIdx) in getPuzzleResult(puzzle.id).specialRuleResults" :key="'sr-'+srIdx">
                         <template v-slot:prepend>
                           <v-icon :color="getSpecialRuleColor(sr)" class="mr-2">
                             {{ sr.passed ? 'mdi-check-circle' : 'mdi-close-circle' }}
@@ -108,11 +127,11 @@ const checkSubtaskPassed = (stRes: any, subtask: any) => {
                       </span>
                       <v-spacer></v-spacer>
                       <v-chip
-                        :color="checkSubtaskPassed(scoreRecord.puzzleResults[puzzle.id].subtasks?.[stIdx], subtask) ? 'success' : 'error'"
+                        :color="checkSubtaskPassed(getPuzzleResult(puzzle.id).subtasks?.[stIdx], subtask) ? 'success' : 'error'"
                         size="small"
                         class="font-weight-bold"
                       >
-                        {{ checkSubtaskPassed(scoreRecord.puzzleResults[puzzle.id].subtasks?.[stIdx], subtask) ? '通過 (Passed)' : '未通過 (Failed)' }}
+                        {{ checkSubtaskPassed(getPuzzleResult(puzzle.id).subtasks?.[stIdx], subtask) ? '通過 (Passed)' : '未通過 (Failed)' }}
                       </v-chip>
                     </v-card-title>
                     <v-card-text class="pa-0">
@@ -129,13 +148,13 @@ const checkSubtaskPassed = (stRes: any, subtask: any) => {
                         <tbody>
                           <!-- Visible Testcases -->
                           <template v-for="(tc, tcIdx) in subtask.visible" :key="'tc-v-'+tcIdx">
-                            <tr v-if="scoreRecord.puzzleResults[puzzle.id].subtasks?.[stIdx]?.visible?.[tcIdx]">
+                            <tr v-if="getPuzzleResult(puzzle.id).subtasks?.[stIdx]?.visible?.[tcIdx]">
                               <td><v-chip size="x-small" color="info">Visible</v-chip></td>
                               <td>
-                                <v-chip size="small" :color="statusColor(scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].status)" variant="flat" class="font-weight-bold">
-                                  {{ scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].status }}
+                                <v-chip size="small" :color="statusColor(getStatus(getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx]))" variant="flat" class="font-weight-bold">
+                                  {{ getStatus(getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx]) }}
                                 </v-chip>
-                                <div class="text-caption mt-1 text-grey-darken-1">{{ scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].time }}s / {{ (scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].memory / 1024 / 1024).toFixed(1) }}MB</div>
+                                <div class="text-caption mt-1 text-grey-darken-1">{{ getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx].time }}s / {{ (getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx].memory / 1024 / 1024).toFixed(1) }}MB</div>
                               </td>
                               <td><pre class="tc-pre">{{ tc.input }}</pre></td>
                               <td>
@@ -143,7 +162,7 @@ const checkSubtaskPassed = (stRes: any, subtask: any) => {
                                 <div v-else class="text-medium-emphasis font-italic mt-2">********</div>
                               </td>
                               <td>
-                                <pre v-if="!locked" class="tc-pre" :class="{ 'text-error': scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].status !== 'AC' }">{{ scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].userOutput || scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].stdout || scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].stderr || scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].visible[tcIdx].error || '' }}</pre>
+                                <pre v-if="!locked" class="tc-pre" :class="{ 'text-error': getStatus(getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx]) !== 'AC' }">{{ getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx].userOutput || getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx].stdout || getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx].stderr || getPuzzleResult(puzzle.id).subtasks[stIdx].visible[tcIdx].error || '' }}</pre>
                                 <div v-else class="text-medium-emphasis font-italic mt-2">********</div>
                               </td>
                             </tr>
@@ -151,13 +170,13 @@ const checkSubtaskPassed = (stRes: any, subtask: any) => {
                           
                           <!-- Hidden Testcases -->
                           <template v-for="(tc, tcIdx) in subtask.hidden" :key="'tc-h-'+tcIdx">
-                            <tr v-if="scoreRecord.puzzleResults[puzzle.id].subtasks?.[stIdx]?.hidden?.[tcIdx]">
+                            <tr v-if="getPuzzleResult(puzzle.id).subtasks?.[stIdx]?.hidden?.[tcIdx]">
                               <td><v-chip size="x-small" color="grey">Hidden</v-chip></td>
                               <td>
-                                <v-chip size="small" :color="statusColor(scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].status)" variant="flat" class="font-weight-bold">
-                                  {{ scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].status }}
+                                <v-chip size="small" :color="statusColor(getStatus(getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx]))" variant="flat" class="font-weight-bold">
+                                  {{ getStatus(getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx]) }}
                                 </v-chip>
-                                <div class="text-caption mt-1 text-grey-darken-1">{{ scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].time }}s / {{ (scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].memory / 1024 / 1024).toFixed(1) }}MB</div>
+                                <div class="text-caption mt-1 text-grey-darken-1">{{ getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx].time }}s / {{ (getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx].memory / 1024 / 1024).toFixed(1) }}MB</div>
                               </td>
                               <td><pre class="tc-pre">{{ tc.input }}</pre></td>
                               <td>
@@ -165,7 +184,7 @@ const checkSubtaskPassed = (stRes: any, subtask: any) => {
                                 <div v-else class="text-medium-emphasis font-italic mt-2">********</div>
                               </td>
                               <td>
-                                <pre v-if="!locked" class="tc-pre" :class="{ 'text-error': scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].status !== 'AC' }">{{ scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].userOutput || scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].stdout || scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].stderr || scoreRecord.puzzleResults[puzzle.id].subtasks[stIdx].hidden[tcIdx].error || '' }}</pre>
+                                <pre v-if="!locked" class="tc-pre" :class="{ 'text-error': getStatus(getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx]) !== 'AC' }">{{ getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx].userOutput || getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx].stdout || getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx].stderr || getPuzzleResult(puzzle.id).subtasks[stIdx].hidden[tcIdx].error || '' }}</pre>
                                 <div v-else class="text-medium-emphasis font-italic mt-2">********</div>
                               </td>
                             </tr>

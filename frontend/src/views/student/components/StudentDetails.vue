@@ -5,6 +5,7 @@ import { useScoreStore } from '../../../stores/score.store';
 import { useConfigStore } from '../../../stores/config.store';
 import CodeViewer from './CodeViewer.vue';
 import SubmissionDetails from '../../../components/SubmissionDetails.vue';
+import UnbindWarningDialog from '../../device/components/UnbindWarningDialog.vue';
 
 const props = defineProps<{
   student: any;
@@ -20,6 +21,7 @@ const resetLoading = ref(false);
 const submissions = ref<any[]>([]);
 const evalResult = ref<any>(null);
 const evalError = ref<string | null>(null);
+const showUnbindDialog = ref(false);
 
 const tab = ref('code');
 const isLocked = ref(true);
@@ -48,7 +50,7 @@ const fetchCode = async () => {
 
 const studentScoreRecord = computed(() => {
   if (!props.student || !scoreStore.scores) return null;
-  return scoreStore.scores.find(s => s.user?.testId === props.student.id || s.user?.id === props.student.id);
+  return scoreStore.scores.find(s => s.testId === props.student.id || s.user?.testId === props.student.id || s.user?.id === props.student.id);
 });
 
 // Expose fetchCode so parent can trigger it, or just watch inside component
@@ -59,8 +61,12 @@ watch(() => props.student, (newVal, oldVal) => {
   }
 }, { immediate: true });
 
-const handleResetBinding = async () => {
-  if (!confirm(`確定要清除學生 ${props.student.name} (${props.student.id}) 的裝置綁定嗎？`)) return;
+const handleResetBindingClick = () => {
+  showUnbindDialog.value = true;
+};
+
+const confirmResetBinding = async () => {
+  showUnbindDialog.value = false;
   resetLoading.value = true;
   try {
     await studentStore.resetDeviceBinding(props.student.id);
@@ -163,7 +169,7 @@ const handleExportCode = async () => {
             color="warning"
             prepend-icon="mdi-cellphone-link-off"
             :loading="resetLoading"
-            @click="handleResetBinding"
+            @click="handleResetBindingClick"
             variant="flat"
             width="160"
           >
@@ -192,6 +198,13 @@ const handleExportCode = async () => {
         </div>
       </v-card-text>
     </v-card>
+
+    <UnbindWarningDialog
+      v-model="showUnbindDialog"
+      :device="{ name: student.name, id: student.id, status: student.isOnline ? 'ONLINE' : 'UNBOUND' }"
+      action="unbind"
+      @confirm="confirmResetBinding"
+    />
 
     <!-- Evaluation Result Alert -->
     <v-alert
