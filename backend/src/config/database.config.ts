@@ -54,6 +54,17 @@ export async function initDatabase() {
     // Sync tables
     await sequelize.sync();
     console.log("Database tables synchronized.");
+
+    // Insert default exam config if not exists
+    const { DEFAULT_EXAM_CONFIG } = await import("../constants/default-config.constant");
+    const existingConfig = await SystemSettings.findOne({ where: { name: "exam_config" } });
+    if (!existingConfig) {
+      await SystemSettings.create({
+        name: "exam_config",
+        value: JSON.stringify(DEFAULT_EXAM_CONFIG)
+      });
+      console.log("Inserted default exam config into database.");
+    }
   } catch (error) {
     console.error("Unable to connect to the database:", error);
     throw error;
