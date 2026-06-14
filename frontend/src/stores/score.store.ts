@@ -20,6 +20,7 @@ export const useScoreStore = defineStore('score', () => {
       } else {
         submissions.value.push(payload.result);
       }
+      fetchScores(true);
     }
   });
 
@@ -49,8 +50,8 @@ export const useScoreStore = defineStore('score', () => {
     }
   }
 
-  async function fetchScores() {
-    loading.value = true;
+  async function fetchScores(silent = false) {
+    if (!silent) loading.value = true;
     error.value = null;
     try {
       const res = await axios.get(`${BACKEND_URL}/admin/scores`);
@@ -58,7 +59,7 @@ export const useScoreStore = defineStore('score', () => {
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to fetch scores';
     } finally {
-      loading.value = false;
+      if (!silent) loading.value = false;
     }
   }
 

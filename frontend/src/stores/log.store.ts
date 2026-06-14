@@ -14,12 +14,12 @@ export const useLogStore = defineStore('log', () => {
   // Setup socket listener for real-time updates
   socket.on('data-update', (payload: any) => {
     if (payload && payload.type === 'log') {
-      fetchLogs();
+      fetchLogs(1, 50, undefined, undefined, true);
     }
   });
 
-  async function fetchLogs(page = 1, limit = 50, level?: string, search?: string) {
-    loading.value = true;
+  async function fetchLogs(page = 1, limit = 50, level?: string, search?: string, silent = false) {
+    if (!silent) loading.value = true;
     error.value = null;
     try {
       const params = new URLSearchParams({
@@ -35,7 +35,7 @@ export const useLogStore = defineStore('log', () => {
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to fetch logs';
     } finally {
-      loading.value = false;
+      if (!silent) loading.value = false;
     }
   }
 

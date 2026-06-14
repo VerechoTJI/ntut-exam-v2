@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
   scoreRecord: any;
@@ -9,9 +9,17 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:isLocked']);
 
+const internalLocked = ref(true);
+
 const locked = computed({
-  get: () => props.isLocked || false,
-  set: (val) => emit('update:isLocked', val)
+  get: () => props.isLocked !== undefined ? props.isLocked : internalLocked.value,
+  set: (val) => {
+    if (props.isLocked !== undefined) {
+      emit('update:isLocked', val);
+    } else {
+      internalLocked.value = val;
+    }
+  }
 });
 
 const statusColor = (status: string) => {
@@ -62,7 +70,7 @@ const getStatus = (tcRes: any) => {
 
 <template>
   <div class="h-100 d-flex flex-column submission-details">
-    <div class="d-flex justify-end mb-4 flex-shrink-0" v-if="props.isLocked !== undefined">
+    <div class="d-flex justify-end mb-4 flex-shrink-0">
       <v-btn
         :color="locked ? 'error' : 'success'"
         :prepend-icon="locked ? 'mdi-lock' : 'mdi-lock-open'"

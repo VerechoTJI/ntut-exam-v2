@@ -53,16 +53,26 @@ const getPuzzleResult = (item: any, puzzleId: string) => {
 // Helper: Get status of a subtask ('T' or 'F')
 const getSubtaskStatus = (item: any, puzzleId: string, subtaskIdx: any) => {
   const pResult = getPuzzleResult(item, puzzleId);
-  if (pResult && pResult.subtasks) {
-    const idx = Number(subtaskIdx);
-    if (pResult.subtasks[idx]) {
-      const st = pResult.subtasks[idx];
-      const visPassed = st.visible ? st.visible.every((v: any) => (v.status || v.statusCode) === 'AC') : true;
-      const hidPassed = st.hidden ? st.hidden.every((h: any) => (h.status || h.statusCode) === 'AC') : true;
-      return (visPassed && hidPassed) ? 'T' : 'F';
-    }
-  }
-  return 'F';
+  if (!pResult || !pResult.subtasks) return 'F';
+
+  const idx = Number(subtaskIdx);
+  const stRes = pResult.subtasks[idx];
+  if (!stRes) return 'F';
+
+  const puzzleConfig = props.config?.sections?.flatMap((s: any) => s.puzzles || []).find((p: any) => p.id === puzzleId);
+  const subtaskConfig = puzzleConfig?.subtasks?.[idx];
+
+  if (!subtaskConfig) return 'F';
+
+  const allVisible = subtaskConfig.visible?.length > 0 
+    ? subtaskConfig.visible.every((_: any, i: number) => stRes.visible && (stRes.visible[i]?.status || stRes.visible[i]?.statusCode) === 'AC') 
+    : true;
+    
+  const allHidden = subtaskConfig.hidden?.length > 0 
+    ? subtaskConfig.hidden.every((_: any, i: number) => stRes.hidden && (stRes.hidden[i]?.status || stRes.hidden[i]?.statusCode) === 'AC') 
+    : true;
+
+  return (allVisible && allHidden) ? 'T' : 'F';
 };
 
 // Copy Table to Excel
@@ -263,7 +273,7 @@ const copyToClipboard = async () => {
         </thead>
         <tbody>
           <!-- Loading State -->
-          <tr v-if="props.loading">
+          <tr v-if="props.loading && props.items.length === 0">
             <td :colspan="100" class="text-center py-6 text-medium-emphasis">
               <v-progress-circular indeterminate color="primary" class="mr-2"></v-progress-circular>
               載入中...
@@ -271,7 +281,7 @@ const copyToClipboard = async () => {
           </tr>
 
           <!-- Empty State -->
-          <tr v-else-if="filteredItems.length === 0">
+          <tr v-else-if="!props.loading && filteredItems.length === 0">
             <td :colspan="100" class="text-center py-6 text-medium-emphasis">
               找不到符合搜尋條件的學生資料
             </td>

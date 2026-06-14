@@ -93,7 +93,7 @@ const getWarningText = (type: string) => {
         </thead>
         <tbody>
           <!-- Loading State -->
-          <tr v-if="props.loading">
+          <tr v-if="props.loading && props.items.length === 0">
             <td colspan="6" class="text-center py-6 text-medium-emphasis">
               <v-progress-circular indeterminate color="primary" class="mr-2"></v-progress-circular>
               載入異常警告中...
@@ -101,7 +101,7 @@ const getWarningText = (type: string) => {
           </tr>
 
           <!-- Empty State -->
-          <tr v-else-if="props.items.length === 0">
+          <tr v-else-if="!props.loading && props.items.length === 0">
             <td colspan="6" class="text-center py-6 text-medium-emphasis">
               目前無符合條件的異常警告記錄
             </td>

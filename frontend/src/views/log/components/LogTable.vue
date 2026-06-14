@@ -87,7 +87,7 @@ const getActionColor = (actionType: string) => {
         </thead>
         <tbody>
           <!-- Loading State -->
-          <tr v-if="props.loading">
+          <tr v-if="props.loading && props.items.length === 0">
             <td colspan="6" class="text-center py-6 text-medium-emphasis">
               <v-progress-circular indeterminate color="primary" class="mr-2"></v-progress-circular>
               載入日誌中...
@@ -95,7 +95,7 @@ const getActionColor = (actionType: string) => {
           </tr>
 
           <!-- Empty State -->
-          <tr v-else-if="props.items.length === 0">
+          <tr v-else-if="!props.loading && props.items.length === 0">
             <td colspan="6" class="text-center py-6 text-medium-emphasis">
               找不到符合搜尋條件的日誌
             </td>

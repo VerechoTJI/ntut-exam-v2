@@ -106,11 +106,14 @@ export class JudgerService {
     };
     const mappedLanguage = languageMap[submission.language] || submission.language.toLowerCase();
 
+    const resolvedTimeLimit = puzzle.timeLimit ?? examConfig.judgerSettings?.timeLimit ?? 10000;
+    const resolvedMemoryLimit = puzzle.memoryLimit ?? examConfig.judgerSettings?.memoryLimit ?? 256;
+
     // Prepare Judger options
     const options = {
       language: mappedLanguage,
-      timeLimit: puzzle.timeLimit,
-      memoryLimit: puzzle.memoryLimit ? puzzle.memoryLimit * 1024 * 1024 : undefined,
+      timeLimit: Math.floor(resolvedTimeLimit),
+      memoryLimit: Math.floor(resolvedMemoryLimit * 1024 * 1024),
       compareMode: examConfig.judgerSettings?.compareMode || 'loose',
     };
 

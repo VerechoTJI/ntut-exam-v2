@@ -13,12 +13,12 @@ export const useStudentStore = defineStore('student', () => {
   // Setup socket listener for real-time updates
   socket.on('data-update', (payload: any) => {
     if (payload && payload.type === 'student') {
-      fetchStudents();
+      fetchStudents(true);
     }
   });
 
-  async function fetchStudents() {
-    loading.value = true;
+  async function fetchStudents(silent = false) {
+    if (!silent) loading.value = true;
     error.value = null;
     try {
       const res = await axios.get(`${BACKEND_URL}/admin/device`);
@@ -26,7 +26,7 @@ export const useStudentStore = defineStore('student', () => {
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to fetch students';
     } finally {
-      loading.value = false;
+      if (!silent) loading.value = false;
     }
   }
 
