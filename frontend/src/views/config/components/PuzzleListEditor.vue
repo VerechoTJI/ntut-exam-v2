@@ -27,6 +27,13 @@ const removePuzzle = (index: number) => {
     puzzles.value.splice(index, 1);
   }
 };
+
+const checkMemoryLimit = (val: any) => {
+  const num = Number(val);
+  if (!isNaN(num) && num > 1024) {
+    alert("提醒：記憶體限制超過 1GB (1024MB)！請確認您輸入的單位為 MB 而非 Bytes。");
+  }
+};
 </script>
 
 <template>
@@ -59,7 +66,7 @@ const removePuzzle = (index: number) => {
               <v-text-field v-model.number="puzzle.timeLimit" type="number" label="Time Limit (ms, optional)" outlined density="compact" hide-details></v-text-field>
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model.number="puzzle.memoryLimit" type="number" label="Memory Limit (MB, optional)" outlined density="compact" hide-details></v-text-field>
+              <v-text-field v-model.number="puzzle.memoryLimit" @update:model-value="checkMemoryLimit" type="number" label="Memory Limit (MB, optional)" outlined density="compact" hide-details></v-text-field>
             </v-col>
           </v-row>
 

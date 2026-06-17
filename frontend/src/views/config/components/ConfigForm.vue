@@ -10,16 +10,26 @@ const configStore = useConfigStore();
 
 const DRAFT_KEY = 'draft_exam_config';
 
+const patchConfig = (data: any) => {
+  if (!data) data = {};
+  if (!data.environmentVariables) {
+    data.environmentVariables = { startPassword: '' };
+  } else if (data.environmentVariables.startPassword === undefined) {
+    data.environmentVariables.startPassword = '';
+  }
+  return data;
+};
+
 const loadInitialData = () => {
   const draft = localStorage.getItem(DRAFT_KEY);
   if (draft) {
     try {
-      return JSON.parse(draft);
+      return patchConfig(JSON.parse(draft));
     } catch (e) {
       console.error('Failed to parse draft config');
     }
   }
-  return JSON.parse(JSON.stringify(props.initialData || {}));
+  return patchConfig(JSON.parse(JSON.stringify(props.initialData || {})));
 };
 
 const localForm = ref<ExamConfig>(loadInitialData());
@@ -32,7 +42,7 @@ watch(() => localForm.value, (newVal) => {
 // Only update from backend if we don't have a draft, to prevent overwriting user input
 watch(() => props.initialData, (newVal) => {
   if (newVal && !localStorage.getItem(DRAFT_KEY)) {
-    localForm.value = JSON.parse(JSON.stringify(newVal));
+    localForm.value = patchConfig(JSON.parse(JSON.stringify(newVal)));
   }
 }, { deep: true });
 
@@ -42,6 +52,11 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const submitForm = async () => {
   const sectionIds = new Set<string>();
   const puzzleIds = new Set<string>();
+
+  if (!localForm.value.environmentVariables?.startPassword?.trim()) {
+    alert('Start Password is required and cannot be empty.');
+    return;
+  }
 
   // Validate uniqueness and scores
   for (const section of localForm.value.sections || []) {
@@ -111,7 +126,7 @@ const importJson = (event: Event) => {
   reader.onload = (e) => {
     try {
       const parsed = JSON.parse(e.target?.result as string);
-      localForm.value = parsed;
+      localForm.value = patchConfig(parsed);
     } catch (err) {
       alert('Invalid JSON file format');
     }

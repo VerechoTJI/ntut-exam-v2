@@ -106,14 +106,21 @@ export class JudgerService {
     };
     const mappedLanguage = languageMap[submission.language] || submission.language.toLowerCase();
 
-    const resolvedTimeLimit = puzzle.timeLimit ?? examConfig.judgerSettings?.timeLimit ?? 10000;
-    const resolvedMemoryLimit = puzzle.memoryLimit ?? examConfig.judgerSettings?.memoryLimit ?? 256;
+    let resolvedTimeLimit = puzzle.timeLimit ?? examConfig.judgerSettings?.timeLimit ?? 10000;
+    let resolvedMemoryLimit = puzzle.memoryLimit ?? examConfig.judgerSettings?.memoryLimit ?? 256;
+
+    // Auto-detect if memory limit was entered in bytes instead of MB
+    // If it's > 10240 (10 GB), it's highly likely they meant bytes.
+    let finalMemoryLimitBytes = Math.floor(resolvedMemoryLimit * 1024 * 1024);
+    if (resolvedMemoryLimit > 10240) {
+      finalMemoryLimitBytes = Math.floor(resolvedMemoryLimit);
+    }
 
     // Prepare Judger options
     const options = {
       language: mappedLanguage,
       timeLimit: Math.floor(resolvedTimeLimit),
-      memoryLimit: Math.floor(resolvedMemoryLimit * 1024 * 1024),
+      memoryLimit: finalMemoryLimitBytes,
       compareMode: examConfig.judgerSettings?.compareMode || 'loose',
     };
 

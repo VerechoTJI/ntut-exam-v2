@@ -75,6 +75,13 @@ const importCsv = () => {
   showCsvDialog.value = false;
   csvText.value = '';
 };
+
+const checkMemoryLimit = (val: any) => {
+  const num = Number(val);
+  if (!isNaN(num) && num > 1024) {
+    alert("提醒：記憶體限制超過 1GB (1024MB)！請確認您輸入的單位為 MB 而非 Bytes。");
+  }
+};
 </script>
 
 <template>
@@ -95,7 +102,7 @@ const importCsv = () => {
             <v-text-field v-model.number="config.judgerSettings.timeLimit" label="Time Limit (ms)" type="number" outlined></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-text-field v-model.number="config.judgerSettings.memoryLimit" label="Memory Limit (MB)" type="number" outlined></v-text-field>
+            <v-text-field v-model.number="config.judgerSettings.memoryLimit" @update:model-value="checkMemoryLimit" label="Memory Limit (MB)" type="number" outlined></v-text-field>
           </v-col>
           <v-col cols="4">
             <v-select v-model="config.judgerSettings.compareMode" :items="[{title: 'Strict Match (嚴格比對)', value: 'strict'}, {title: 'Whitespace-insensitive (標記忽略比對)', value: 'loose'}]" label="Compare Mode" outlined :readonly="props.disabled"></v-select>

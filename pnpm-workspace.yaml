@@ -1,6 +1,7 @@
 packages:
-  - 'backend'
-  - 'frontend'
+  - "backend"
+  - "frontend"
 allowBuilds:
-  '@parcel/watcher': true
+  "@parcel/watcher": true
   sqlite3: true
+  "special-rule-engine@https://codeload.github.com/Rduanchen/special-rule-engine/tar.gz/4efce0e466f452b242b0c8832748bdbaf00b7301": true
