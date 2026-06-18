@@ -42,7 +42,7 @@ export const useConfigStore = defineStore('config', () => {
     loading.value = true;
     error.value = null;
     try {
-      const res = await axios.post(`${BACKEND_URL}/admin/config`, newConfig);
+      const res = await axios.put(`${BACKEND_URL}/admin/config`, newConfig);
       config.value = res.data;
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to save config';

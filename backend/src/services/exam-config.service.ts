@@ -58,14 +58,9 @@ export class ExamConfigService {
 
           targetPuzzle.score = newPuzzle.score;
 
-          // 4. 進入 subtasks，只允許覆蓋 score 與 visible/hidden 測資陣列。
+          // 4. 進入 subtasks，允許完全覆蓋 subtasks 陣列（包含所有測資與分數）。
           if (targetPuzzle.subtasks && newPuzzle.subtasks) {
-            const minLength = Math.min(targetPuzzle.subtasks.length, newPuzzle.subtasks.length);
-            for (let i = 0; i < minLength; i++) {
-              targetPuzzle.subtasks[i].score = newPuzzle.subtasks[i].score;
-              targetPuzzle.subtasks[i].visible = newPuzzle.subtasks[i].visible;
-              targetPuzzle.subtasks[i].hidden = newPuzzle.subtasks[i].hidden;
-            }
+            targetPuzzle.subtasks = newPuzzle.subtasks;
           }
           // 5. 忽略任何新增刪除題目、修改題號、特殊規則 (Special Rules) 的變更。
         }

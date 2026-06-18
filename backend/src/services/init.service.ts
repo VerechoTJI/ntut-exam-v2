@@ -7,6 +7,8 @@ import { Submission } from "../models/submission.model";
 import { ViolationLog } from "../models/violation-log.model";
 import { UserActionLog } from "../models/user-action-log.model";
 import { Message } from "../models/message.model";
+import { LoginRequest } from "../models/login-request.model";
+import { UnblockedDevice } from "../models/unblocked-device.model";
 import { SystemSettingsService } from "./system-settings.service";
 import { ExamStateService, ExamState } from "./exam-state.service";
 import { HttpError } from "../utils/http-error";
@@ -111,6 +113,8 @@ export class InitService {
       await Message.destroy({ where: {}, transaction });
       await User.destroy({ where: {}, transaction });
       await DeviceKeyMap.destroy({ where: {}, transaction });
+      await LoginRequest.destroy({ where: {}, transaction });
+      await UnblockedDevice.destroy({ where: {}, transaction });
 
       await transaction.commit();
     } catch (error: any) {
