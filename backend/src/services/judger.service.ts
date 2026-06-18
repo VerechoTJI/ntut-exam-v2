@@ -10,6 +10,8 @@ import { piston, pistonJudger } from "piston-judger";
 import logger from "../utils/logger.util";
 import { ExamConfig, Puzzle } from "../schemas/config.schema";
 
+const MAX_OUTPUT_LENGTH = 5000;
+
 export class JudgerService {
   /**
    * Main entry point for evaluating student code.
@@ -149,11 +151,17 @@ export class JudgerService {
           run_memory_limit: options.memoryLimit,
         } as any);
 
+        const truncateString = (str: any, limit: number = MAX_OUTPUT_LENGTH) => {
+          if (typeof str !== 'string') return str;
+          if (str.length <= limit) return str;
+          return str.substring(0, limit) + "\\n...[Output Truncated]";
+        };
+
         let judgeRes: any;
         if (executeRes.success === false || executeRes.error || !executeRes.run) {
           judgeRes = {
             status: "SE",
-            message: executeRes.error || "System Error during execution",
+            message: truncateString(executeRes.error || "System Error during execution"),
             details: { isServerError: true }
           };
         } else {
@@ -167,7 +175,7 @@ export class JudgerService {
 
         const formattedRes = {
           status: judgeRes.status,
-          userOutput: judgeRes.actualOutput || "",
+          userOutput: truncateString(judgeRes.actualOutput || ""),
           expectedOutput: tc.output,
           time: judgeRes.details?.runInfo?.wallTime?.toString() || "0"
         };
@@ -184,11 +192,17 @@ export class JudgerService {
           run_memory_limit: options.memoryLimit,
         } as any);
 
+        const truncateString = (str: any, limit: number = MAX_OUTPUT_LENGTH) => {
+          if (typeof str !== 'string') return str;
+          if (str.length <= limit) return str;
+          return str.substring(0, limit) + "\\n...[Output Truncated]";
+        };
+
         let judgeRes: any;
         if (executeRes.success === false || executeRes.error || !executeRes.run) {
           judgeRes = {
             status: "SE",
-            message: executeRes.error || "System Error during execution",
+            message: truncateString(executeRes.error || "System Error during execution"),
             details: { isServerError: true }
           };
         } else {
@@ -202,7 +216,7 @@ export class JudgerService {
 
         const formattedRes = {
           status: judgeRes.status,
-          userOutput: judgeRes.actualOutput || "",
+          userOutput: truncateString(judgeRes.actualOutput || ""),
           expectedOutput: tc.output,
           time: judgeRes.details?.runInfo?.wallTime?.toString() || "0"
         };
