@@ -106,6 +106,17 @@ const handleExportCode = async () => {
     exporting.value = false;
   }
 };
+
+const handleDeleteCode = async (questionId: string) => {
+  if (confirm('確定要刪除這題的程式碼嗎？')) {
+    try {
+      await studentStore.deleteStudentCode(props.student.id, questionId);
+      await fetchCode();
+    } catch (err: any) {
+      alert('刪除失敗');
+    }
+  }
+};
 </script>
 
 <template>
@@ -236,7 +247,7 @@ const handleExportCode = async () => {
           <v-card-title class="bg-grey-lighten-4 border-b py-2 text-subtitle-1 font-weight-bold">
             <v-icon start>mdi-code-braces</v-icon> 提交程式碼
           </v-card-title>
-          <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" />
+          <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" @delete="handleDeleteCode" />
         </v-card>
       </v-col>
       <v-col cols="6" class="h-100 d-flex flex-column pa-2 pr-0">
@@ -266,7 +277,7 @@ const handleExportCode = async () => {
 
       <v-window v-model="tab" class="flex-grow-1 min-h-0 h-100" style="overflow-y: hidden;">
         <v-window-item value="code" class="h-100 d-flex flex-column">
-          <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" />
+          <CodeViewer :submissions="submissions" :loading="loadingCode" class="flex-grow-1" @delete="handleDeleteCode" />
         </v-window-item>
         
         <v-window-item value="result" class="h-100 d-flex flex-column">

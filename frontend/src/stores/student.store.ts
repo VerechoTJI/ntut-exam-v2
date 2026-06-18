@@ -95,6 +95,23 @@ export const useStudentStore = defineStore('student', () => {
     }
   }
 
+  async function deleteStudentCode(testId: string, questionId?: string) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const url = new URL(`${BACKEND_URL}/admin/submissions/${testId}/code`);
+      if (questionId) {
+        url.searchParams.append('questionId', questionId);
+      }
+      await axios.delete(url.toString());
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message || 'Failed to delete student code';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     students,
     loading,
@@ -103,6 +120,7 @@ export const useStudentStore = defineStore('student', () => {
     resetDeviceBinding,
     fetchStudentCode,
     reevaluateStudentCode,
-    exportStudentCodeZip
+    exportStudentCodeZip,
+    deleteStudentCode
   };
 });

@@ -78,4 +78,17 @@ export class CodeStorageService {
 
     return submission.codeContent;
   }
+
+  public static async deleteSubmissions(testId: string, questionId?: string): Promise<void> {
+    try {
+      const whereClause: any = { testId };
+      if (questionId) {
+        whereClause.questionId = questionId;
+      }
+      await Submission.destroy({ where: whereClause });
+    } catch (error: any) {
+      logger.error(`CodeStorageService.deleteSubmissions error for ${testId}: ${error.message}`);
+      throw new Error('Failed to delete submission(s)');
+    }
+  }
 }

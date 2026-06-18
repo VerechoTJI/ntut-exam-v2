@@ -90,4 +90,22 @@ export class AdminSubmissionController {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
+
+  public static async deleteStudentCode(req: Request, res: Response): Promise<void> {
+    try {
+      const { testId } = req.params;
+      const { questionId } = req.query;
+
+      if (!testId) {
+        res.status(400).json({ error: 'Bad Request: Missing testId' });
+        return;
+      }
+
+      await CodeStorageService.deleteSubmissions(testId, questionId as string | undefined);
+      res.status(200).json({ message: 'Code deleted successfully' });
+    } catch (error: any) {
+      logger.error(`Admin deleteStudentCode error: ${error.message}`);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
 }

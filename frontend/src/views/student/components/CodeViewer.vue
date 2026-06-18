@@ -6,6 +6,10 @@ const props = defineProps<{
   loading: boolean;
 }>();
 
+const emit = defineEmits<{
+  (e: 'delete', questionId: string): void;
+}>();
+
 const activeTab = ref(0);
 
 const sortedSubmissions = computed(() => {
@@ -70,8 +74,17 @@ const formatDate = (dateString: string) => {
             :key="idx"
             :value="idx"
           >
-            <div class="pa-2 bg-grey-lighten-4 text-caption text-medium-emphasis d-flex justify-end border-b">
-              提交時間: {{ formatDate(sub.submitTime) }}
+            <div class="pa-2 bg-grey-lighten-4 text-caption text-medium-emphasis d-flex justify-space-between align-center border-b">
+              <span>提交時間: {{ formatDate(sub.submitTime) }}</span>
+              <v-btn
+                color="error"
+                size="small"
+                variant="outlined"
+                prepend-icon="mdi-delete"
+                @click="$emit('delete', sub.questionId)"
+              >
+                刪除程式碼
+              </v-btn>
             </div>
             <div class="code-container">
               <pre><code>{{ sub.codeContent }}</code></pre>
