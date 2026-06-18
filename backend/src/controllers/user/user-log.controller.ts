@@ -7,7 +7,10 @@ export class UserLogController {
     try {
       const testId = (req as any).userSession?.testId;
       const { actionType, details } = (req as any).userSession?.decryptedBody || {};
-      const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || null;
+      let ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket?.remoteAddress || null;
+      if (ipAddress && ipAddress.includes(',')) {
+        ipAddress = ipAddress.split(',')[0].trim();
+      }
 
       if (!testId) {
         res.status(401).json({ error: 'Unauthorized: Missing user information' });

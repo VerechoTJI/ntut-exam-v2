@@ -15,7 +15,10 @@ export const createActionLog = (actionType: string) => {
           return;
         }
 
-        const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || null;
+        let ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket?.remoteAddress || null;
+        if (ipAddress && ipAddress.includes(',')) {
+          ipAddress = ipAddress.split(',')[0].trim();
+        }
         
         // Save the log
         await UserActionLogService.createLog(testId, ipAddress, actionType, {
