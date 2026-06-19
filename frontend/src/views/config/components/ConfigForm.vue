@@ -95,16 +95,21 @@ const submitForm = async () => {
         sumSubtasks += subtask.score;
       }
 
-      if (
-        puzzle.subtasks &&
-        puzzle.subtasks.length > 0 &&
-        sumSubtasks !== puzzle.score
-      ) {
-        alert(
-          `Score Mismatch in Puzzle "${puzzle.title}": Subtasks sum to ${sumSubtasks}, but Puzzle score is set to ${puzzle.score}.`,
-        );
-        return;
-      }
+      // if (
+      //   puzzle.subtasks &&
+      //   puzzle.subtasks.length > 0 &&
+      //   sumSubtasks !== puzzle.score
+      // ) {
+      //   alert(
+      //     `Score Mismatch in Puzzle "${puzzle.title}": Subtasks sum to ${sumSubtasks}, but Puzzle score is set to ${puzzle.score}.`,
+      //   );
+      //   return;
+      // }
+
+      // if (section.puzzles && section.puzzles.length > 0 && sumPuzzles !== section.maxScore) {
+      //   alert(`Score Mismatch in Section "${section.title}": Puzzles sum to ${sumPuzzles}, but Section maxScore is set to ${section.maxScore}.`);
+      //   return;
+      // }
       sumPuzzles += puzzle.score;
     }
   }
@@ -156,19 +161,9 @@ const triggerFileInput = () => {
       <v-toolbar-title>Edit Configuration</v-toolbar-title>
       <v-spacer></v-spacer>
       <div v-if="!props.disabled">
-        <input
-          type="file"
-          ref="fileInput"
-          accept=".json"
-          style="display: none"
-          @change="importJson"
-        />
-        <v-btn prepend-icon="mdi-upload" @click="triggerFileInput"
-          >Import JSON</v-btn
-        >
-        <v-btn prepend-icon="mdi-download" @click="exportJson"
-          >Export JSON</v-btn
-        >
+        <input type="file" ref="fileInput" accept=".json" style="display: none" @change="importJson" />
+        <v-btn prepend-icon="mdi-upload" @click="triggerFileInput">Import JSON</v-btn>
+        <v-btn prepend-icon="mdi-download" @click="exportJson">Export JSON</v-btn>
       </div>
       <div v-else class="text-caption px-4">
         Core settings locked. Only test cases are editable.
@@ -186,23 +181,14 @@ const triggerFileInput = () => {
       </v-window-item>
 
       <v-window-item value="sections">
-        <SectionListEditor
-          v-model="localForm.sections"
-          :disabled="props.disabled"
-        />
+        <SectionListEditor v-model="localForm.sections" :disabled="props.disabled" />
       </v-window-item>
     </v-window>
 
     <v-divider></v-divider>
     <v-card-actions class="pa-4">
       <v-spacer></v-spacer>
-      <v-btn
-        type="submit"
-        color="success"
-        size="large"
-        variant="elevated"
-        :loading="configStore.loading"
-      >
+      <v-btn type="submit" color="success" size="large" variant="elevated" :loading="configStore.loading">
         {{
           props.disabled
             ? "Update Test Cases Only"
