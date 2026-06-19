@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { CodeStorageService } from '../../services/code-storage.service';
+import { ExamConfigParserService } from '../../services/exam-config-parser.service';
 import logger from '../../utils/logger.util';
 import AdmZip from 'adm-zip';
 
@@ -105,6 +106,37 @@ export class AdminSubmissionController {
       res.status(200).json({ message: 'Code deleted successfully' });
     } catch (error: any) {
       logger.error(`Admin deleteStudentCode error: ${error.message}`);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+  public static async uploadStudentCode(req: Request, res: Response): Promise<void> {
+    try {
+      const { testId } = req.params;
+      const { questionId, language, codeContent } = req.body;
+
+      if (!testId) {
+        res.status(400).json({ error: 'Bad Request: Missing testId' });
+        return;
+      }
+
+      if (!questionId || !language || !codeContent) {
+        res.status(400).json({ error: 'Bad Request: Missing required fields (questionId, language, codeContent)' });
+        return;
+      }
+
+      // Defense: Verify that the question exists before uploading
+      const isValidQuestion = await ExamConfigParserService.questionExists(questionId);
+      if (!isValidQuestion) {
+        res.status(400).json({ error: `Bad Request: Invalid questionId '${questionId}'` });
+        return;
+      }
+
+      // Upsert overwrites the existing code for this testId and questionId
+      await CodeStorageService.upsertSubmission(testId, { questionId, language, codeContent });
+
+      res.status(200).json({ success: true, message: 'Student code uploaded successfully' });
+    } catch (error: any) {
+      logger.error(`Admin uploadStudentCode error: ${error.message}`);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }

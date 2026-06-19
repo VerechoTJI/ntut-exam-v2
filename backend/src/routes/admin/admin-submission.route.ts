@@ -10,6 +10,7 @@ router.get("/students", AdminSubmissionController.getSubmittedStudents);
 router.get('/:testId/code', AdminSubmissionController.getStudentCode);
 router.get('/:testId/list', AdminSubmissionController.getSubmittedList);
 router.get('/:testId/export', AdminSubmissionController.exportStudentCodeZip);
+router.post('/:testId/code', AdminSubmissionController.uploadStudentCode);
 router.delete('/:testId/code', AdminSubmissionController.deleteStudentCode);
 
 export default router;
