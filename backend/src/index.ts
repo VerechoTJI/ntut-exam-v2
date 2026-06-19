@@ -13,7 +13,7 @@ import { Server } from "socket.io";
 import SocketService from "./sockets/socket.service";
 import MessageSocketService from "./sockets/message-socket.service";
 
-import PISTON_CONFIG from "./constants/piston.config";
+import PISTON_CONFIG, { checkPistonServer } from "./constants/piston.config";
 
 dotenv.config();
 
@@ -69,23 +69,6 @@ app.use(
   },
 );
 
-// test if piston server has started
-
-async function testPistonServer() {
-  try {
-    const response = await fetch(PISTON_CONFIG.url, {
-      method: "GET",
-    });
-    if (response.ok) {
-      logger.info("Piston server is running");
-    } else {
-      logger.warn("Piston server is not running");
-    }
-  } catch (error: any) {
-    logger.error(`Failed to start the server: ${error.message}`);
-  }
-}
-
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 SocketService.initialize(io.of("/admin"));
@@ -94,6 +77,7 @@ MessageSocketService.initialize(io.of("/user"));
 async function startServer() {
   try {
     await initDatabase();
+    await checkPistonServer();
     // 綁定到 0.0.0.0 以強制使用 IPv4，避免出現 ::ffff: 前綴
     server.listen(typeof port === 'string' ? parseInt(port) : port, '0.0.0.0', () => {
       logger.info(`Server is running on http://localhost:${port} (IPv4)`);

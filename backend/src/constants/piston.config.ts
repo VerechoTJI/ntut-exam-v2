@@ -8,7 +8,7 @@ const CONFIG = {
   MEMORY_LIMIT_KB: process.env.JUDGE_MEMORY_LIMIT_KB
     ? Number(process.env.JUDGE_MEMORY_LIMIT_KB)
     : 102400, // 預設 100 MB
-  url: process.env.JUDGER_URL || "http://localhost:2000",
+  url: process.env.PISTON_URL || "http://localhost:2000",
   languages: {
     Python: {
       name: "python3",
@@ -36,3 +36,18 @@ export default CONFIG;
 
 export type LanguageKey = keyof typeof CONFIG.languages;
 export type LanguageConfig = (typeof CONFIG.languages)[LanguageKey];
+
+export const checkPistonServer = async () => {
+  try {
+    const response = await fetch(CONFIG.url, {
+      method: "GET",
+    });
+    if (!response.ok) {
+      console.error(`[Error] Piston server at ${CONFIG.url} is not running correctly. Status: ${response.status}`);
+    } else {
+      console.log(`[Info] Piston server is reachable at ${CONFIG.url}`);
+    }
+  } catch (error: any) {
+    console.error(`[Error] Failed to reach Piston server at ${CONFIG.url}. Is it reachable? Error: ${error.message}`);
+  }
+};
