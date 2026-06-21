@@ -33,36 +33,54 @@ export class ExamConfigService {
       throw new HttpError(400, `Bad Request: ${JSON.stringify(errors)}`);
     }
 
-    // Clone the old config to act as the baseline
-    const mergedConfig: ExamConfig = JSON.parse(JSON.stringify(oldConfig));
+    // Clone the new config to act as the baseline
+    const mergedConfig: ExamConfig = JSON.parse(JSON.stringify(verifiedNewConfig));
 
-    // Iterate through sections and puzzles of the verified new payload
-    for (const newSection of verifiedNewConfig.sections) {
-      for (const newPuzzle of newSection.puzzles) {
-        // Search for the matching puzzle ID in the old configuration baseline
-        const targetPuzzle = await ExamConfigParserService.getPuzzleById(newPuzzle.id, mergedConfig);
+    mergedConfig.accessibleUsers = oldConfig.accessibleUsers;
+    mergedConfig.environmentVariables = oldConfig.environmentVariables;
 
-        if (targetPuzzle) {
-          // 3. 找到後，只允許將 timeLimit、memoryLimit、score 的值從 newPayload 覆蓋過去。
-          if (newPuzzle.timeLimit !== undefined) {
-            targetPuzzle.timeLimit = newPuzzle.timeLimit;
-          } else {
-            delete targetPuzzle.timeLimit;
+    if (mergedConfig.sections.length !== oldConfig.sections.length) {
+      throw new HttpError(400, "Bad Request: Cannot change the number of sections after initialization");
+    }
+
+    for (let i = 0; i < mergedConfig.sections.length; i++) {
+      const newSection = mergedConfig.sections[i];
+      const oldSection = oldConfig.sections[i];
+
+      if (newSection.id !== oldSection.id) {
+        throw new HttpError(400, `Bad Request: Cannot change section ID from ${oldSection.id} to ${newSection.id}`);
+      }
+
+      if (newSection.puzzles.length !== oldSection.puzzles.length) {
+        throw new HttpError(400, `Bad Request: Cannot change the number of puzzles in section ${oldSection.id}`);
+      }
+
+      for (let j = 0; j < newSection.puzzles.length; j++) {
+        const newPuzzle = newSection.puzzles[j];
+        const oldPuzzle = oldSection.puzzles[j];
+
+        if (newPuzzle.id !== oldPuzzle.id) {
+          throw new HttpError(400, `Bad Request: Cannot change puzzle ID from ${oldPuzzle.id} to ${newPuzzle.id}`);
+        }
+
+        if (newPuzzle.language !== oldPuzzle.language) {
+          throw new HttpError(400, `Bad Request: Cannot change language of puzzle ${oldPuzzle.id}`);
+        }
+
+        if (newPuzzle.subtasks.length !== oldPuzzle.subtasks.length) {
+          throw new HttpError(400, `Bad Request: Cannot change the number of subtasks in puzzle ${oldPuzzle.id}`);
+        }
+
+        for (let k = 0; k < newPuzzle.subtasks.length; k++) {
+          const newSubtask = newPuzzle.subtasks[k];
+          const oldSubtask = oldPuzzle.subtasks[k];
+
+          if (newSubtask.visible.length !== oldSubtask.visible.length) {
+            throw new HttpError(400, `Bad Request: Cannot change the number of visible test cases in puzzle ${oldPuzzle.id}`);
           }
-
-          if (newPuzzle.memoryLimit !== undefined) {
-            targetPuzzle.memoryLimit = newPuzzle.memoryLimit;
-          } else {
-            delete targetPuzzle.memoryLimit;
+          if (newSubtask.hidden.length !== oldSubtask.hidden.length) {
+            throw new HttpError(400, `Bad Request: Cannot change the number of hidden test cases in puzzle ${oldPuzzle.id}`);
           }
-
-          targetPuzzle.score = newPuzzle.score;
-
-          // 4. 進入 subtasks，允許完全覆蓋 subtasks 陣列（包含所有測資與分數）。
-          if (targetPuzzle.subtasks && newPuzzle.subtasks) {
-            targetPuzzle.subtasks = newPuzzle.subtasks;
-          }
-          // 5. 忽略任何新增刪除題目、修改題號、特殊規則 (Special Rules) 的變更。
         }
       }
     }

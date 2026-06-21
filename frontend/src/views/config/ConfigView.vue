@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useConfigStore } from '../../stores/config.store';
 import ConfigForm from './components/ConfigForm.vue';
 import DbInitPanel from './components/DbInitPanel.vue';
 
 const configStore = useConfigStore();
+const configFormRef = ref<InstanceType<typeof ConfigForm> | null>(null);
 
 onMounted(() => {
   configStore.fetchConfig();
   configStore.fetchInitStatus();
 });
+
+const handleInit = async () => {
+  if (configFormRef.value) {
+    const success = await configFormRef.value.submitForm();
+    if (!success) return; // Wait for successful save before initializing
+  }
+  await configStore.initializeDatabase();
+};
 </script>
 
 <template>
@@ -28,11 +37,11 @@ onMounted(() => {
 
     <v-row>
       <v-col cols="12" md="4">
-        <DbInitPanel />
+        <DbInitPanel @init="handleInit" />
       </v-col>
       <v-col cols="12" md="8">
         <v-card :loading="configStore.loading" class="pa-0 rounded-lg" elevation="2">
-          <ConfigForm v-if="configStore.config" :initial-data="configStore.config" :disabled="configStore.isInitialized" />
+          <ConfigForm ref="configFormRef" v-if="configStore.config" :initial-data="configStore.config" :disabled="configStore.isInitialized" />
         </v-card>
       </v-col>
     </v-row>

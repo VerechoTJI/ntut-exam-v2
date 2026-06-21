@@ -105,7 +105,7 @@ const checkMemoryLimit = (val: any) => {
             <v-text-field v-model.number="config.judgerSettings.memoryLimit" @update:model-value="checkMemoryLimit" label="Memory Limit (MB)" type="number" outlined></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-select v-model="config.judgerSettings.compareMode" :items="[{title: 'Strict Match (嚴格比對)', value: 'strict'}, {title: 'Whitespace-insensitive (標記忽略比對)', value: 'loose'}]" label="Compare Mode" outlined :readonly="props.disabled"></v-select>
+            <v-select v-model="config.judgerSettings.compareMode" :items="[{title: 'Strict Match (嚴格比對)', value: 'strict'}, {title: 'Whitespace-insensitive (標記忽略比對)', value: 'loose'}]" label="Compare Mode" outlined></v-select>
           </v-col>
         </v-row>
       </v-col>

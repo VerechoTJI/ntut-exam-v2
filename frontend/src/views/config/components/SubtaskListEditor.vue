@@ -37,8 +37,8 @@ const removeSubtask = (index: number) => {
     <v-card v-for="(subtask, index) in subtasks" :key="index" variant="outlined" class="mb-4 pa-3 border">
       <div class="d-flex align-center justify-space-between mb-3">
         <div class="d-flex align-center" style="width: 80%;">
-          <v-text-field v-model="subtask.title" label="Subtask Title" density="compact" hide-details class="mr-2" :readonly="props.disabled"></v-text-field>
-          <v-text-field v-model.number="subtask.score" type="number" label="Score" density="compact" hide-details style="max-width: 150px;" :readonly="props.disabled"></v-text-field>
+          <v-text-field v-model="subtask.title" label="Subtask Title" density="compact" hide-details class="mr-2"></v-text-field>
+          <v-text-field v-model.number="subtask.score" type="number" label="Score" density="compact" hide-details style="max-width: 150px;"></v-text-field>
         </div>
         <v-btn v-if="!props.disabled" icon="mdi-delete" size="small" color="error" variant="text" @click="removeSubtask(index)"></v-btn>
       </div>

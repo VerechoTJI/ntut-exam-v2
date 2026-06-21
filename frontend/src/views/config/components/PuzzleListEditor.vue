@@ -57,7 +57,7 @@ const checkMemoryLimit = (val: any) => {
               <v-text-field v-model="puzzle.title" label="Title" outlined density="compact"></v-text-field>
             </v-col>
             <v-col cols="2">
-              <v-text-field v-model.number="puzzle.score" type="number" label="Score" outlined density="compact" :readonly="props.disabled"></v-text-field>
+              <v-text-field v-model.number="puzzle.score" type="number" label="Score" outlined density="compact"></v-text-field>
             </v-col>
             <v-col cols="2">
               <v-text-field v-model="puzzle.language" label="Language" outlined density="compact" :readonly="props.disabled"></v-text-field>

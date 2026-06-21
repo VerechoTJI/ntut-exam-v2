@@ -3,9 +3,11 @@ import { useConfigStore } from '../../../stores/config.store';
 
 const configStore = useConfigStore();
 
+const emit = defineEmits(['init']);
+
 const handleInit = async () => {
   if (confirm('Are you sure you want to initialize the database?')) {
-    await configStore.initializeDatabase();
+    emit('init');
   }
 };
 

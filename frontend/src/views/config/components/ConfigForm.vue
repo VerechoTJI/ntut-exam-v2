@@ -57,24 +57,24 @@ watch(
 const tab = ref("general");
 const fileInput = ref<HTMLInputElement | null>(null);
 
-const submitForm = async () => {
+const submitForm = async (): Promise<boolean> => {
   const sectionIds = new Set<string>();
   const puzzleIds = new Set<string>();
 
   if (!localForm.value.environmentVariables?.startPassword?.trim()) {
     alert("Start Password is required and cannot be empty.");
-    return;
+    return false;
   }
 
   // Validate uniqueness and scores
   for (const section of localForm.value.sections || []) {
     if (!section.id?.trim()) {
       alert(`Section "${section.title}" has an empty ID.`);
-      return;
+      return false;
     }
     if (sectionIds.has(section.id)) {
       alert(`Duplicate Section ID found: ${section.id}`);
-      return;
+      return false;
     }
     sectionIds.add(section.id);
 
@@ -82,11 +82,11 @@ const submitForm = async () => {
     for (const puzzle of section.puzzles || []) {
       if (!puzzle.id?.trim()) {
         alert(`Puzzle "${puzzle.title}" has an empty ID.`);
-        return;
+        return false;
       }
       if (puzzleIds.has(puzzle.id)) {
         alert(`Duplicate Puzzle ID found: ${puzzle.id}`);
-        return;
+        return false;
       }
       puzzleIds.add(puzzle.id);
 
@@ -95,21 +95,6 @@ const submitForm = async () => {
         sumSubtasks += subtask.score;
       }
 
-      // if (
-      //   puzzle.subtasks &&
-      //   puzzle.subtasks.length > 0 &&
-      //   sumSubtasks !== puzzle.score
-      // ) {
-      //   alert(
-      //     `Score Mismatch in Puzzle "${puzzle.title}": Subtasks sum to ${sumSubtasks}, but Puzzle score is set to ${puzzle.score}.`,
-      //   );
-      //   return;
-      // }
-
-      // if (section.puzzles && section.puzzles.length > 0 && sumPuzzles !== section.maxScore) {
-      //   alert(`Score Mismatch in Section "${section.title}": Puzzles sum to ${sumPuzzles}, but Section maxScore is set to ${section.maxScore}.`);
-      //   return;
-      // }
       sumPuzzles += puzzle.score;
     }
   }
@@ -118,8 +103,10 @@ const submitForm = async () => {
     await configStore.saveConfig(localForm.value);
     localStorage.removeItem(DRAFT_KEY); // Clear draft after successful save
     alert("Configuration saved successfully!");
+    return true;
   } catch (e) {
     console.error(e);
+    return false;
   }
 };
 
@@ -153,6 +140,8 @@ const importJson = (event: Event) => {
 const triggerFileInput = () => {
   if (fileInput.value) fileInput.value.click();
 };
+
+defineExpose({ submitForm });
 </script>
 
 <template>
@@ -176,7 +165,7 @@ const triggerFileInput = () => {
         >
       </div>
       <div v-else class="text-caption px-4">
-        Core settings locked. Only test cases are editable.
+        Some settings locked (Students, Passwords, IDs, Counts, Languages).
       </div>
     </v-toolbar>
 
