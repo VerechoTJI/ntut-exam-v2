@@ -94,10 +94,7 @@ const submitForm = async () => {
       sumPuzzles += puzzle.score;
     }
 
-    if (section.puzzles && section.puzzles.length > 0 && sumPuzzles !== section.maxScore) {
-      alert(`Score Mismatch in Section "${section.title}": Puzzles sum to ${sumPuzzles}, but Section maxScore is set to ${section.maxScore}.`);
-      return;
-    }
+
   }
 
   try {

@@ -362,6 +362,10 @@ const copyToClipboard = async () => {
 .score-row:hover td {
   background-color: rgba(var(--v-theme-primary), 0.04);
 }
+.score-row:hover td.sticky-col {
+  background-color: white;
+  background-image: linear-gradient(rgba(var(--v-theme-primary), 0.04), rgba(var(--v-theme-primary), 0.04));
+}
 .color-score {
   color: #1976d2;
 }
