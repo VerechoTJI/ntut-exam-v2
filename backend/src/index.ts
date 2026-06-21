@@ -78,9 +78,9 @@ async function startServer() {
   try {
     await initDatabase();
     await checkPistonServer();
-    // 綁定到 0.0.0.0 以強制使用 IPv4，避免出現 ::ffff: 前綴
-    server.listen(typeof port === 'string' ? parseInt(port) : port, '0.0.0.0', () => {
-      logger.info(`Server is running on http://localhost:${port} (IPv4)`);
+    // 移除強制綁定 0.0.0.0，因為我們現在有 IP 正規化 (normalizeIp) 處理了
+    server.listen(typeof port === 'string' ? parseInt(port) : port, () => {
+      logger.info(`Server is running on http://localhost:${port}`);
 
       // Print prominent warning if LOAD_TEST_MODE is enabled
       const loadTestMode = process.env.LOAD_TEST_MODE;

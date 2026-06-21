@@ -7,6 +7,7 @@ import * as MessageService from "../../services/message.service";
 import { ExamStateService } from "../../services/exam-state.service";
 import { User } from "../../models/user.model";
 import { HttpError } from "../../utils/http-error";
+import { normalizeIp } from "../../utils/ip.util";
 
 export class UserController {
   /**
@@ -28,7 +29,7 @@ export class UserController {
    */
   static async getStudentIdByIp(req: Request, res: Response, next: NextFunction) {
     try {
-      const ipAddress = req.ip || req.socket.remoteAddress || "";
+      const ipAddress = normalizeIp(req.ip || req.socket.remoteAddress || "");
       if (!ipAddress) {
         throw new HttpError(400, "Bad Request: Could not determine client IP address");
       }
@@ -55,7 +56,7 @@ export class UserController {
     }
 
     try {
-      const ipAddress = req.ip || req.socket.remoteAddress || "";
+      const ipAddress = normalizeIp(req.ip || req.socket.remoteAddress || "");
       await DeviceService.registerKey(device_uuid, encrypted_aes_key, ipAddress);
       res.status(200).json({ message: "Device registered successfully" });
     } catch (error) {
@@ -81,7 +82,7 @@ export class UserController {
     }
 
     try {
-      const clientIp = req.ip || req.socket.remoteAddress || "";
+      const clientIp = normalizeIp(req.ip || req.socket.remoteAddress || "");
       const session_token = await AuthService.loginAndBind(req.body, clientIp);
       res.status(200).json({ session_token });
     } catch (error) {

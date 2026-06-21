@@ -1,15 +1,16 @@
 import { Request, Response } from 'express';
 import { UserActionLogService } from '../../services/user-action-log.service';
 import { AntiCheatService } from '../../services/anti-cheat.service';
+import { normalizeIp } from '../../utils/ip.util';
 
 export class UserLogController {
   public static async logClientAction(req: Request, res: Response): Promise<void> {
     try {
       const testId = (req as any).userSession?.testId;
       const { actionType, details } = (req as any).userSession?.decryptedBody || {};
-      let ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket?.remoteAddress || null;
+      let ipAddress = normalizeIp((req.headers['x-forwarded-for'] as string) || req.ip || req.socket?.remoteAddress || null);
       if (ipAddress && ipAddress.includes(',')) {
-        ipAddress = ipAddress.split(',')[0].trim();
+        ipAddress = normalizeIp(ipAddress.split(',')[0].trim());
       }
 
       if (!testId) {

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UserActionLogService } from '../services/user-action-log.service';
 import { AntiCheatService } from '../services/anti-cheat.service';
 import logger from '../utils/logger.util';
+import { normalizeIp } from '../utils/ip.util';
 
 export const createActionLog = (actionType: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -15,9 +16,9 @@ export const createActionLog = (actionType: string) => {
           return;
         }
 
-        let ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket?.remoteAddress || null;
+        let ipAddress = normalizeIp((req.headers['x-forwarded-for'] as string) || req.ip || req.socket?.remoteAddress || null);
         if (ipAddress && ipAddress.includes(',')) {
-          ipAddress = ipAddress.split(',')[0].trim();
+          ipAddress = normalizeIp(ipAddress.split(',')[0].trim());
         }
         
         // Save the log
