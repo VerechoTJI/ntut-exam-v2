@@ -56,22 +56,10 @@ export class InitService {
 
       // Loop through accessibleUsers to build records
       for (const accessibleUser of config.accessibleUsers) {
-        let deviceUuid: string | null = null;
-        
-        if (accessibleUser.ip) {
-          deviceUuid = randomUUID();
-          await DeviceKeyMap.create({
-            deviceUuid,
-            ipAddress: accessibleUser.ip,
-            clientAesKey: "", // initialized without key until client logs in
-            isOnline: false
-          }, { transaction });
-        }
-
         const user = await User.create({
           testId: accessibleUser.id,
           name: accessibleUser.name,
-          deviceUuid: deviceUuid || null,
+          deviceUuid: null, // Initially unbound
           ipAddress: accessibleUser.ip || null
         }, { transaction });
 
