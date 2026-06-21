@@ -16,7 +16,7 @@ export class User extends Model {
   declare loginTime: Date;
 
   @Column({ field: "ip_address", type: DataType.STRING, allowNull: true })
-  declare ipAddress: string;
+  declare ipAddress: string | null;
 
   @ForeignKey(() => DeviceKeyMap)
   @Column({ field: "device_uuid", type: DataType.STRING, allowNull: true })

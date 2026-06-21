@@ -55,7 +55,25 @@ export class AuthService {
 
     // Check if device is bound to ANOTHER user
     if (device && device.testId && device.testId !== testId) {
-      throw new HttpError(403, "BINDING_LOCKED", "This device is already bound to another student. Please ask TA to unbind it first.");
+      // Check if TA has approved re-binding for this device
+      const unblockedUuidRecord = await UnblockedDevice.findOne({
+        where: { targetType: "UUID", targetValue: deviceUuid }
+      });
+      if (unblockedUuidRecord) {
+        // TA approved: unbind old user and consume the pass
+        await BindingService.unbindDevice(deviceUuid);
+        await unblockedUuidRecord.destroy();
+        // Re-fetch device since unbindDevice modifies it
+        const refreshedDevice = await DeviceKeyMap.findOne({ where: { deviceUuid } });
+        if (refreshedDevice) {
+          // device variable is used later, but since we can't reassign the const,
+          // we update the fields directly on the original reference
+          device.testId = refreshedDevice.testId;
+          device.status = refreshedDevice.status;
+        }
+      } else {
+        throw new HttpError(403, "BINDING_LOCKED", "This device is already bound to another student. Please ask TA to unbind it first.");
+      }
     }
 
     // Checking secondary login for User

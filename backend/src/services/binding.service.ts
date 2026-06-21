@@ -76,6 +76,7 @@ export class BindingService {
 
     // Unbind User
     user.deviceUuid = null;
+    user.ipAddress = null;
     await user.save();
 
     // Unbind Device
@@ -109,6 +110,7 @@ export class BindingService {
     const user = await User.findOne({ where: { deviceUuid } });
     if (user) {
       user.deviceUuid = null;
+      user.ipAddress = null;
       await user.save();
     }
 
