@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 
 const props = defineProps<{
   items: any[];
@@ -9,8 +9,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'click-row', item: any): void;
-  (e: 'update:search', value: string): void;
+  (e: "click-row", item: any): void;
+  (e: "update:search", value: string): void;
 }>();
 
 const tableRef = ref<HTMLElement | null>(null);
@@ -19,9 +19,9 @@ const tableRef = ref<HTMLElement | null>(null);
 const filteredItems = computed(() => {
   if (!props.search) return props.items;
   const q = props.search.toLowerCase();
-  return props.items.filter(item => {
-    const testId = (item['user.testId'] || '').toLowerCase();
-    const name = (item['user.name'] || '').toLowerCase();
+  return props.items.filter((item) => {
+    const testId = (item["user.testId"] || "").toLowerCase();
+    const name = (item["user.name"] || "").toLowerCase();
     return testId.includes(q) || name.includes(q);
   });
 });
@@ -37,7 +37,9 @@ const getSectionSubtaskCount = (section: any) => {
 // Helper: Get global puzzle index
 const getPuzzleGlobalIndex = (puzzleId: string) => {
   if (!props.config?.sections) return -1;
-  return props.config.sections.flatMap((s: any) => s.puzzles || []).findIndex((p: any) => p.id === puzzleId);
+  return props.config.sections
+    .flatMap((s: any) => s.puzzles || [])
+    .findIndex((p: any) => p.id === puzzleId);
 };
 
 const getPuzzleResult = (item: any, puzzleId: string) => {
@@ -53,26 +55,38 @@ const getPuzzleResult = (item: any, puzzleId: string) => {
 // Helper: Get status of a subtask ('T' or 'F')
 const getSubtaskStatus = (item: any, puzzleId: string, subtaskIdx: any) => {
   const pResult = getPuzzleResult(item, puzzleId);
-  if (!pResult || !pResult.subtasks) return 'F';
+  if (!pResult || !pResult.subtasks) return "F";
 
   const idx = Number(subtaskIdx);
   const stRes = pResult.subtasks[idx];
-  if (!stRes) return 'F';
+  if (!stRes) return "F";
 
-  const puzzleConfig = props.config?.sections?.flatMap((s: any) => s.puzzles || []).find((p: any) => p.id === puzzleId);
+  const puzzleConfig = props.config?.sections
+    ?.flatMap((s: any) => s.puzzles || [])
+    .find((p: any) => p.id === puzzleId);
   const subtaskConfig = puzzleConfig?.subtasks?.[idx];
 
-  if (!subtaskConfig) return 'F';
+  if (!subtaskConfig) return "F";
 
-  const allVisible = subtaskConfig.visible?.length > 0 
-    ? subtaskConfig.visible.every((_: any, i: number) => stRes.visible && (stRes.visible[i]?.status || stRes.visible[i]?.statusCode) === 'AC') 
-    : true;
-    
-  const allHidden = subtaskConfig.hidden?.length > 0 
-    ? subtaskConfig.hidden.every((_: any, i: number) => stRes.hidden && (stRes.hidden[i]?.status || stRes.hidden[i]?.statusCode) === 'AC') 
-    : true;
+  const allVisible =
+    subtaskConfig.visible?.length > 0
+      ? subtaskConfig.visible.every(
+          (_: any, i: number) =>
+            stRes.visible &&
+            (stRes.visible[i]?.status || stRes.visible[i]?.statusCode) === "AC",
+        )
+      : true;
 
-  return (allVisible && allHidden) ? 'T' : 'F';
+  const allHidden =
+    subtaskConfig.hidden?.length > 0
+      ? subtaskConfig.hidden.every(
+          (_: any, i: number) =>
+            stRes.hidden &&
+            (stRes.hidden[i]?.status || stRes.hidden[i]?.statusCode) === "AC",
+        )
+      : true;
+
+  return allVisible && allHidden ? "T" : "F";
 };
 
 // Copy Table to Excel
@@ -83,34 +97,34 @@ const copyToClipboard = async () => {
   const lines: string[] = [];
 
   // Header 1: Section Title
-  const row1 = ['學號', '姓名', '總分'];
+  const row1 = ["學號", "姓名", "總分"];
   config.sections.forEach((sec: any) => {
     const colCount = getSectionSubtaskCount(sec);
     row1.push(sec.title);
-    for (let i = 1; i < colCount; i++) row1.push('');
+    for (let i = 1; i < colCount; i++) row1.push("");
   });
-  lines.push(row1.join('\t'));
+  lines.push(row1.join("\t"));
 
   // Header 2: Puzzle Title
-  const row2 = ['', '', ''];
+  const row2 = ["", "", ""];
   config.sections.forEach((sec: any) => {
     if (!sec.puzzles || sec.puzzles.length === 0) {
-      row2.push('-');
+      row2.push("-");
       return;
     }
     sec.puzzles.forEach((puz: any) => {
       const colCount = Math.max(puz.subtasks?.length || 0, 1);
       row2.push(puz.title);
-      for (let i = 1; i < colCount; i++) row2.push('');
+      for (let i = 1; i < colCount; i++) row2.push("");
     });
   });
-  lines.push(row2.join('\t'));
+  lines.push(row2.join("\t"));
 
   // Header 3: Subtask Index
-  const row3 = ['', '', ''];
+  const row3 = ["", "", ""];
   config.sections.forEach((sec: any) => {
     if (!sec.puzzles || sec.puzzles.length === 0) {
-      row3.push('-');
+      row3.push("-");
       return;
     }
     sec.puzzles.forEach((puz: any) => {
@@ -119,22 +133,22 @@ const copyToClipboard = async () => {
           row3.push((idx + 1).toString());
         });
       } else {
-        row3.push('-');
+        row3.push("-");
       }
     });
   });
-  lines.push(row3.join('\t'));
+  lines.push(row3.join("\t"));
 
   // Data Rows
-  filteredItems.value.forEach(item => {
+  filteredItems.value.forEach((item) => {
     const row = [
-      item['user.testId'] || '',
-      item['user.name'] || '',
-      item.score?.toString() || '0'
+      item["user.testId"] || "",
+      item["user.name"] || "",
+      item.score?.toString() || "0",
     ];
     config.sections.forEach((sec: any) => {
       if (!sec.puzzles || sec.puzzles.length === 0) {
-        row.push('-');
+        row.push("-");
         return;
       }
       sec.puzzles.forEach((puz: any) => {
@@ -143,32 +157,32 @@ const copyToClipboard = async () => {
             row.push(getSubtaskStatus(item, puz.id, idx));
           });
         } else {
-          row.push('-');
+          row.push("-");
         }
       });
     });
-    lines.push(row.join('\t'));
+    lines.push(row.join("\t"));
   });
 
-  const tsvContent = lines.join('\n');
+  const tsvContent = lines.join("\n");
 
   try {
     // Generate HTML for perfect Excel pasting (maintains rowspan/colspan and colors)
-    let htmlContent = '';
+    let htmlContent = "";
     if (tableRef.value) {
       const clone = tableRef.value.cloneNode(true) as HTMLElement;
       // Remove sticky classes so Excel doesn't misinterpret them
-      const elements = clone.querySelectorAll('.sticky-col');
-      elements.forEach(el => el.classList.remove('sticky-col'));
+      const elements = clone.querySelectorAll(".sticky-col");
+      elements.forEach((el) => el.classList.remove("sticky-col"));
       htmlContent = clone.outerHTML;
     }
 
     if (navigator.clipboard && window.ClipboardItem) {
       const dataItems: Record<string, Blob> = {
-        'text/plain': new Blob([tsvContent], { type: 'text/plain' })
+        "text/plain": new Blob([tsvContent], { type: "text/plain" }),
       };
       if (htmlContent) {
-        dataItems['text/html'] = new Blob([htmlContent], { type: 'text/html' });
+        dataItems["text/html"] = new Blob([htmlContent], { type: "text/html" });
       }
       const clipboardItem = new ClipboardItem(dataItems);
       await navigator.clipboard.write([clipboardItem]);
@@ -176,26 +190,28 @@ const copyToClipboard = async () => {
       // Fallback
       await navigator.clipboard.writeText(tsvContent);
     }
-    alert('表格內容已複製到剪貼簿，可以直接在 Excel 中貼上！');
+    alert("表格內容已複製到剪貼簿，可以直接在 Excel 中貼上！");
   } catch (err) {
-    console.error('複製失敗:', err);
-    alert('複製失敗，請手動選取複製');
+    console.error("複製失敗:", err);
+    alert("複製失敗，請手動選取複製");
   }
 };
 </script>
 
 <template>
   <v-card class="rounded-lg" border elevation="1">
-    <v-card-title class="d-flex align-center justify-space-between pa-4 flex-wrap gap-4">
+    <v-card-title
+      class="d-flex align-center justify-space-between pa-4 flex-wrap gap-4"
+    >
       <v-text-field
         :model-value="props.search"
-        @update:model-value="val => emit('update:search', val as string)"
+        @update:model-value="(val) => emit('update:search', val as string)"
         append-inner-icon="mdi-magnify"
         label="搜尋學生 (學號/姓名)"
         single-line
         hide-details
         density="compact"
-        style="max-width: 300px;"
+        style="max-width: 300px"
       ></v-text-field>
 
       <v-btn
@@ -215,9 +231,24 @@ const copyToClipboard = async () => {
         <thead>
           <!-- Row 1: Section headers -->
           <tr>
-            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-1 head-cell">學號</th>
-            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-2 head-cell">姓名</th>
-            <th rowspan="3" class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-3 head-cell">總分</th>
+            <th
+              rowspan="3"
+              class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-1 head-cell"
+            >
+              學號
+            </th>
+            <th
+              rowspan="3"
+              class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-2 head-cell"
+            >
+              姓名
+            </th>
+            <th
+              rowspan="3"
+              class="text-center font-weight-bold cell-border text-subtitle-2 bg-grey-lighten-4 sticky-col col-3 head-cell"
+            >
+              總分
+            </th>
             <th
               v-for="section in props.config?.sections"
               :key="section.id"
@@ -229,7 +260,10 @@ const copyToClipboard = async () => {
           </tr>
           <!-- Row 2: Puzzle headers -->
           <tr>
-            <template v-for="section in props.config?.sections" :key="section.id">
+            <template
+              v-for="section in props.config?.sections"
+              :key="section.id"
+            >
               <template v-if="section.puzzles && section.puzzles.length > 0">
                 <th
                   v-for="puzzle in section.puzzles"
@@ -240,14 +274,20 @@ const copyToClipboard = async () => {
                   {{ puzzle.title }}
                 </th>
               </template>
-              <th v-else class="text-center font-weight-bold cell-border bg-grey-lighten-4 text-caption py-1">
+              <th
+                v-else
+                class="text-center font-weight-bold cell-border bg-grey-lighten-4 text-caption py-1"
+              >
                 -
               </th>
             </template>
           </tr>
           <!-- Row 3: Subtask Index headers -->
           <tr>
-            <template v-for="section in props.config?.sections" :key="section.id">
+            <template
+              v-for="section in props.config?.sections"
+              :key="section.id"
+            >
               <template v-if="section.puzzles && section.puzzles.length > 0">
                 <template v-for="puzzle in section.puzzles" :key="puzzle.id">
                   <th
@@ -266,7 +306,11 @@ const copyToClipboard = async () => {
                 </template>
               </template>
               <template v-else>
-                <th class="text-center font-weight-bold cell-border text-caption py-1 px-2">-</th>
+                <th
+                  class="text-center font-weight-bold cell-border text-caption py-1 px-2"
+                >
+                  -
+                </th>
               </template>
             </template>
           </tr>
@@ -275,7 +319,11 @@ const copyToClipboard = async () => {
           <!-- Loading State -->
           <tr v-if="props.loading && props.items.length === 0">
             <td :colspan="100" class="text-center py-6 text-medium-emphasis">
-              <v-progress-circular indeterminate color="primary" class="mr-2"></v-progress-circular>
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                class="mr-2"
+              ></v-progress-circular>
               載入中...
             </td>
           </tr>
@@ -295,11 +343,29 @@ const copyToClipboard = async () => {
             @click="emit('click-row', item)"
             class="cursor-pointer score-row"
           >
-            <td class="sticky-col col-1 text-body-2 font-weight-medium cell-border px-2 py-2 text-ellipsis text-center" :title="item['user.testId']">{{ item['user.testId'] }}</td>
-            <td class="sticky-col col-2 text-body-2 cell-border px-2 py-2 text-ellipsis text-center" :title="item['user.name']">{{ item['user.name'] }}</td>
-            <td class="sticky-col col-3 text-center text-body-2 font-weight-bold color-score cell-border px-2 py-2 text-ellipsis" :title="item.score">{{ item.score }}</td>
-            
-            <template v-for="section in props.config?.sections" :key="section.id">
+            <td
+              class="sticky-col col-1 text-body-2 font-weight-medium cell-border px-2 py-2 text-ellipsis text-center"
+              :title="item['user.testId']"
+            >
+              {{ item["user.testId"] }}
+            </td>
+            <td
+              class="sticky-col col-2 text-body-2 cell-border px-2 py-2 text-ellipsis text-center"
+              :title="item['user.name']"
+            >
+              {{ item["user.name"] }}
+            </td>
+            <td
+              class="sticky-col col-3 text-center text-body-2 font-weight-bold color-score cell-border px-2 py-2 text-ellipsis"
+              :title="item.score"
+            >
+              {{ item.score }}
+            </td>
+
+            <template
+              v-for="section in props.config?.sections"
+              :key="section.id"
+            >
               <template v-if="section.puzzles && section.puzzles.length > 0">
                 <template v-for="puzzle in section.puzzles" :key="puzzle.id">
                   <td
@@ -308,11 +374,15 @@ const copyToClipboard = async () => {
                     class="text-center py-1 px-2 cell-border"
                   >
                     <v-chip
-                      :color="getSubtaskStatus(item, puzzle.id, idx) === 'T' ? 'success' : 'error'"
+                      :color="
+                        getSubtaskStatus(item, puzzle.id, idx) === 'T'
+                          ? 'success'
+                          : 'error'
+                      "
                       size="small"
                       class="font-weight-bold px-2"
                       variant="flat"
-                      style="min-width: 28px; height: 22px;"
+                      style="min-width: 28px; height: 22px"
                     >
                       {{ getSubtaskStatus(item, puzzle.id, idx) }}
                     </v-chip>
@@ -345,7 +415,8 @@ const copyToClipboard = async () => {
   width: 100%;
   min-width: 800px;
 }
-.score-table-custom th, .score-table-custom td {
+.score-table-custom th,
+.score-table-custom td {
   border: 1px solid #e0e0e0;
   vertical-align: middle;
 }
@@ -362,9 +433,13 @@ const copyToClipboard = async () => {
 .score-row:hover td {
   background-color: rgba(var(--v-theme-primary), 0.04);
 }
+
 .score-row:hover td.sticky-col {
   background-color: white;
-  background-image: linear-gradient(rgba(var(--v-theme-primary), 0.04), rgba(var(--v-theme-primary), 0.04));
+  background-image: linear-gradient(
+    rgba(var(--v-theme-primary), 0.04),
+    rgba(var(--v-theme-primary), 0.04)
+  );
 }
 .color-score {
   color: #1976d2;
@@ -404,7 +479,7 @@ const copyToClipboard = async () => {
   }
   .col-3 {
     left: 210px;
-    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
     width: 80px;
     min-width: 80px;
     max-width: 80px;
@@ -425,4 +500,3 @@ const copyToClipboard = async () => {
   background-color: #f5f5f5 !important;
 }
 </style>
-
