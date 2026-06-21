@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import type { ExamConfig } from '../../../types/config';
+import SpecialRuleEditor from './SpecialRuleEditor.vue';
 
 const showCsvDialog = ref(false);
 const csvText = ref('');
@@ -169,6 +170,13 @@ const checkMemoryLimit = (val: any) => {
             </v-col>
           </v-row>
         </v-card>
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12">
+        <h3 class="text-h6 mb-2">Global Special Rules</h3>
+        <SpecialRuleEditor v-model="config.globalSpecialRules" :disabled="props.disabled" />
       </v-col>
     </v-row>
 

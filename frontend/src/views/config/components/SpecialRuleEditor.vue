@@ -29,6 +29,18 @@ const removeRule = (index: number) => {
   newRules.splice(index, 1);
   emit('update:modelValue', newRules);
 };
+
+const onTypeChange = (rule: any) => {
+  if (rule.type === 'use') {
+    rule.params = { target: rule.params?.target || '' };
+  } else if (rule.type === 'regex') {
+    rule.params = { pattern: rule.params?.pattern || '' };
+  } else if (rule.type === 'composite') {
+    rule.params = { rules: rule.params?.rules || [] };
+  } else {
+    rule.params = {};
+  }
+};
 </script>
 
 <template>
@@ -44,7 +56,7 @@ const removeRule = (index: number) => {
       </div>
       <v-row dense>
         <v-col cols="4">
-          <v-select v-model="rule.type" :items="['regex', 'use', 'composite', 'nestedLoop']" label="Type" density="compact" hide-details :disabled="props.disabled"></v-select>
+          <v-select v-model="rule.type" :items="['regex', 'use', 'composite', 'nestedLoop']" label="Type" density="compact" hide-details :disabled="props.disabled" @update:model-value="onTypeChange(rule)"></v-select>
         </v-col>
         <v-col cols="4">
           <v-select v-model="rule.constraint" :items="['MUST_HAVE', 'MUST_NOT_HAVE']" label="Constraint" density="compact" hide-details :disabled="props.disabled"></v-select>
@@ -57,6 +69,18 @@ const removeRule = (index: number) => {
         </v-col>
         <v-col cols="3">
           <v-text-field v-model.number="rule.multiplier" type="number" step="0.1" min="0" max="1" label="Multiplier" density="compact" hide-details :readonly="props.disabled"></v-text-field>
+        </v-col>
+
+        <!-- Params Editor -->
+        <v-col cols="12" v-if="rule.type === 'use'">
+          <v-text-field v-model="rule.params.target" label="Target Code String" density="compact" hide-details :readonly="props.disabled"></v-text-field>
+        </v-col>
+        <v-col cols="12" v-if="rule.type === 'regex'">
+          <v-text-field v-model="rule.params.pattern" label="Regex Pattern" density="compact" hide-details :readonly="props.disabled"></v-text-field>
+        </v-col>
+        <v-col cols="12" v-if="rule.type === 'composite'">
+          <div class="text-caption font-weight-bold mb-1 ml-1">Sub Rules</div>
+          <SpecialRuleEditor v-model="rule.params.rules" :disabled="props.disabled" class="pl-4 ml-2 border-s-sm border-primary" />
         </v-col>
       </v-row>
     </v-card>
