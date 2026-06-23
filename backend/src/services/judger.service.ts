@@ -90,11 +90,12 @@ export class JudgerService {
     });
 
     // Calculate multiplier from rules
+    //FIXME: rewrite logic and remove magic number
     let multiplier = 1;
     for (const res of evalResults) {
       if (!res.passed) {
-        const rule = effectiveRules.find(r => r.id === res.ruleId);
-        multiplier *= rule?.multiplier ?? 1;
+        multiplier = 0.5;
+        break;
       }
     }
 
