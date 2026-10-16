@@ -230,7 +230,7 @@ export class JudgerService {
     }
 
     // Final Auto Score Calculation
-    const finalAutoScore = Math.floor(totalRawScore * multiplier);
+    const finalAutoScore = totalRawScore * multiplier;
 
     // Update Submission
     await Submission.update(
@@ -320,7 +320,7 @@ export class JudgerService {
         scoreBoard = await ScoreBoard.create(
           {
             testId,
-            score: totalScore,
+            score: Math.round(totalScore),
             lastSubmitTime: new Date(),
             subtaskAmount,
             passedSubtaskAmount,
@@ -333,7 +333,7 @@ export class JudgerService {
       } else {
         await scoreBoard.update(
           {
-            score: totalScore,
+            score: Math.round(totalScore),
             lastSubmitTime: new Date(),
             subtaskAmount,
             passedSubtaskAmount,
